@@ -1,0 +1,14 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <rect width="64" height="64" rx="16" fill="#070A14"/>
+  <defs>
+    <linearGradient id="vx-orbit" x1="8" y1="4" x2="58" y2="60">
+      <stop stop-color="#22E3D2"/>
+      <stop offset="0.55" stop-color="#5B8CFF"/>
+      <stop offset="1" stop-color="#8B6CFF"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="22" stroke="url(#vx-orbit)" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="92 46" transform="rotate(-28 32 32)"/>
+  <circle cx="32" cy="32" r="15.5" stroke="url(#vx-orbit)" stroke-width="3.1" stroke-linecap="round" stroke-dasharray="64 34" transform="rotate(38 32 32)"/>
+  <circle cx="32" cy="32" r="8.5" stroke="#22E3D2" stroke-width="3" stroke-linecap="round" stroke-dasharray="28 26" transform="rotate(-48 32 32)"/>
+  <circle cx="32" cy="32" r="3.15" fill="#2EE6C8"/>
+</svg>
