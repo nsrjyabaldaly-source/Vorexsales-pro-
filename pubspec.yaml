@@ -27,6 +27,8 @@ flutter_launcher_icons:
   image_path: assets/brand/icon.jpg
   adaptive_icon_background: "#070A14"
   adaptive_icon_foreground: assets/brand/icon.jpg
+  adaptive_icon_foreground_inset: 0
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
@@ -37,6 +39,13 @@ flutter:
     - family: Outfit
       fonts:
         - asset: assets/fonts/Outfit-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Outfit-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Outfit-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Outfit-Bold.ttf
+          weight: 700
     - family: PlusJakartaSans
       fonts:
         - asset: assets/fonts/PlusJakartaSans-Variable.ttf

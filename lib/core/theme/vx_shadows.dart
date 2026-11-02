@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 
 abstract final class VxShadows {
+  /// Soft brand wash under primary CTAs (web `shadow-glow`).
   static const glow = [
     BoxShadow(
-      color: Color(0x7322E3D2),
-      blurRadius: 80,
-      spreadRadius: -20,
-      offset: Offset(0, 0),
+      color: Color(0x5922E3D2),
+      blurRadius: 40,
+      spreadRadius: -8,
+      offset: Offset(0, 8),
     ),
   ];
 
@@ -20,6 +21,7 @@ abstract final class VxShadows {
     ),
   ];
 
+  /// Web mark: `drop-shadow(0 0 18px rgba(34,227,210,0.45))`.
   static List<BoxShadow> markGlow({bool enabled = true}) => enabled
       ? const [
           BoxShadow(

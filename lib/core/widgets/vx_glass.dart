@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/theme/vx_radii.dart';
 
+/// Frosted panel — mirrors web `.glass` (blur + ink wash + hairline).
 class VxGlass extends StatelessWidget {
   const VxGlass({
     super.key,
@@ -24,7 +25,7 @@ class VxGlass extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
         child: Container(
           width: width,
           height: height,
@@ -33,10 +34,17 @@ class VxGlass extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
             border: Border.all(color: VxColors.glassBorder),
             gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
               colors: [VxColors.glassTop, VxColors.glassBottom],
             ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x40000000),
+                blurRadius: 32,
+                offset: Offset(0, 16),
+              ),
+            ],
           ),
           child: child,
         ),

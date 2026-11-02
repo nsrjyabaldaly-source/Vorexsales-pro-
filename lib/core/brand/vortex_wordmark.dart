@@ -4,6 +4,7 @@ import 'package:vortexsales/core/brand/vortex_mark.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/theme/vx_typography.dart';
 
+/// Wordmark matching web: white «Vortex» + cyan «Sales», Outfit Semibold 15.
 class VortexWordmark extends StatelessWidget {
   const VortexWordmark({
     super.key,
@@ -37,6 +38,7 @@ class VortexWordmark extends StatelessWidget {
               fontSize: 15,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.2,
+              height: 1.1,
               color: Colors.white,
             ),
           ),

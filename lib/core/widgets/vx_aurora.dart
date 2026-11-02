@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 
+/// Soft cyan/violet wash behind the shell — same atmosphere as the website.
 class VxAurora extends StatelessWidget {
   const VxAurora({super.key, required this.child});
 
@@ -12,17 +13,24 @@ class VxAurora extends StatelessWidget {
       children: [
         const Positioned.fill(child: ColoredBox(color: VxColors.ink900)),
         const Positioned(
-          left: -80,
-          top: -120,
+          left: -100,
+          top: -140,
           child: IgnorePointer(
-            child: _Blob(color: VxColors.auroraCyan, size: 420),
+            child: _Blob(color: VxColors.auroraCyan, size: 480),
           ),
         ),
         const Positioned(
-          right: -60,
-          top: -40,
+          right: -80,
+          top: -20,
           child: IgnorePointer(
-            child: _Blob(color: VxColors.auroraViolet, size: 340),
+            child: _Blob(color: VxColors.auroraViolet, size: 400),
+          ),
+        ),
+        const Positioned(
+          left: 40,
+          bottom: -120,
+          child: IgnorePointer(
+            child: _Blob(color: VxColors.auroraCyan, size: 280),
           ),
         ),
         const Positioned.fill(child: IgnorePointer(child: _GridFade())),
@@ -41,10 +49,17 @@ class _Blob extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: size,
-      height: size * 0.55,
+      height: size * 0.62,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
+        gradient: RadialGradient(
+          colors: [
+            color,
+            color.withValues(alpha: color.a * 0.4),
+            color.withValues(alpha: 0),
+          ],
+          stops: const [0, 0.48, 1],
+        ),
       ),
     );
   }
