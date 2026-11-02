@@ -28,15 +28,15 @@ class _CatalogScreenState extends State<CatalogScreen> {
   Widget build(BuildContext context) {
     final t = VxL10n.of(context);
     final store = StoreScope.of(context);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+    return VxStoreScroll(
+      onRefresh: store.refresh,
       children: [
         KeyedSubtree(
           key: widget.coachKey,
           child: VxPageHeader(
             title: t.catalogTitle,
             subtitle: t.catalogSub,
-            note: t.storeNote,
+            note: t.storeStatus(store.live),
             actionLabel: t.add,
             onAction: () => setState(() {
               _isNew = true;

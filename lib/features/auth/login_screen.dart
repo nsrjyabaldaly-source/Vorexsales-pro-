@@ -18,7 +18,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController(text: 'muhanad@vortex.llc');
-  final _password = TextEditingController(text: '••••••••');
+  final _password = TextEditingController();
 
   @override
   void dispose() {
@@ -66,11 +66,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: VxTextField(controller: _password, obscure: true),
                 ),
                 const SizedBox(height: 20),
+                if (app.authError != null) ...[
+                  Text(
+                    t.signInBody,
+                    style: const TextStyle(fontSize: 13, color: VxColors.violet),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 VxButton(
                   label: t.continueLabel,
                   expanded: true,
                   size: VxButtonSize.lg,
-                  onPressed: () => app.login(),
+                  onPressed: app.authBusy
+                      ? null
+                      : () => app.login(
+                            email: _email.text,
+                            password: _password.text,
+                          ),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -88,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   variant: VxButtonVariant.secondary,
                   expanded: true,
                   size: VxButtonSize.lg,
-                  onPressed: () => app.login(demo: true),
+                  onPressed: app.authBusy ? null : () => app.login(demo: true),
                 ),
                 const SizedBox(height: 20),
                 Wrap(

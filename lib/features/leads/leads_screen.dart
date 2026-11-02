@@ -34,13 +34,13 @@ class _LeadsScreenState extends State<LeadsScreen> {
   Widget build(BuildContext context) {
     final t = VxL10n.of(context);
     final store = StoreScope.of(context);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+    return VxStoreScroll(
+      onRefresh: store.refresh,
       children: [
         VxPageHeader(
           title: t.leadsTitle,
           subtitle: t.leadsSub,
-          note: t.storeNote,
+          note: t.storeStatus(store.live),
           actionLabel: t.add,
           onAction: () => setState(() {
             _isNew = true;

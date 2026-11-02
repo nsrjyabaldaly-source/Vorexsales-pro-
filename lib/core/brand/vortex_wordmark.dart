@@ -10,19 +10,26 @@ class VortexWordmark extends StatelessWidget {
     super.key,
     this.compact = false,
     this.markSize = 32,
+    this.showMark = true,
   });
 
   final bool compact;
   final double markSize;
+  final bool showMark;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        VortexMark(size: markSize, glow: true),
-        if (!compact) ...[
-          const SizedBox(width: 10),
+        if (showMark)
+          VortexMark(
+            size: markSize,
+            glow: true,
+            radius: 12 * (markSize / 32),
+          ),
+        if (showMark && !compact) const SizedBox(width: 10),
+        if (!compact)
           Text.rich(
             TextSpan(
               text: Brand.vortex,
@@ -42,7 +49,6 @@ class VortexWordmark extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-        ],
       ],
     );
   }

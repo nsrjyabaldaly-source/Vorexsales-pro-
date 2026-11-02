@@ -26,13 +26,13 @@ class _KnowledgeScreenState extends State<KnowledgeScreen> {
   Widget build(BuildContext context) {
     final t = VxL10n.of(context);
     final store = StoreScope.of(context);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+    return VxStoreScroll(
+      onRefresh: store.refresh,
       children: [
         VxPageHeader(
           title: t.knowledgeTitle,
           subtitle: t.knowledgeSub,
-          note: t.storeNote,
+          note: t.storeStatus(store.live),
           actionLabel: t.upload,
           onAction: () => setState(() {
             _isNew = true;

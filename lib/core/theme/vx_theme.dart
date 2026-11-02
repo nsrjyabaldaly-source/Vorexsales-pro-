@@ -16,6 +16,7 @@ abstract final class VxTheme {
           : VxTypography.sans,
       scaffoldBackgroundColor: VxColors.ink900,
       canvasColor: VxColors.ink900,
+      applyElevationOverlayColor: false,
       colorScheme: const ColorScheme.dark(
         surface: VxColors.ink900,
         primary: VxColors.cyan,
@@ -24,6 +25,7 @@ abstract final class VxTheme {
         onSecondary: Colors.white,
         onSurface: VxColors.mist100,
         error: VxColors.rose,
+        surfaceTint: Colors.transparent,
       ),
       textTheme: text,
       splashFactory: InkRipple.splashFactory,
@@ -45,7 +47,7 @@ abstract final class VxTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(VxRadii.input),
-          borderSide: BorderSide(color: VxColors.cyan.withValues(alpha: 0.5)),
+          borderSide: const BorderSide(color: VxColors.cyan),
         ),
       ),
       sliderTheme: SliderThemeData(

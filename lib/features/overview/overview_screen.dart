@@ -19,17 +19,29 @@ class OverviewScreen extends StatelessWidget {
     final store = StoreScope.of(context);
     final locale = t.locale.toString();
     final fmt = intl.NumberFormat.decimalPattern(locale);
+    final booked = store.bookings.where((e) => e.status == 'confirmed').length;
+    final close = store.conversations.isEmpty
+        ? 0
+        : ((store.conversations.where((e) => e.status == 'booked').length /
+                    store.conversations.length) *
+                100)
+            .round();
     final cards = [
-      (t.conversations, fmt.format(MockStats.conversations), MockStats.conversationsDelta),
-      (t.booked, fmt.format(MockStats.booked), MockStats.bookedDelta),
-      (t.newLeads, fmt.format(MockStats.leads), MockStats.leadsDelta),
-      (t.closeRate, '${MockStats.intent}%', MockStats.intentDelta),
+      (t.conversations, fmt.format(store.conversations.length), store.live),
+      (t.booked, fmt.format(booked == 0 ? store.bookings.length : booked), store.live),
+      (t.newLeads, fmt.format(store.leads.length), store.live),
+      (t.closeRate, '$close%', store.live),
     ];
     final max = MockStats.weekSeries.reduce((a, b) => a > b ? a : b);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: [
+    return RefreshIndicator(
+      color: VxColors.cyan,
+      backgroundColor: VxColors.ink800,
+      onRefresh: store.refresh,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
         Text(t.hello, style: Theme.of(context).textTheme.displayMedium),
         const SizedBox(height: 6),
         Text(t.dashSub, style: const TextStyle(fontSize: 14, color: VxColors.mist400)),
@@ -63,7 +75,7 @@ class OverviewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '+${card.$3}% ${t.week}',
+                      t.storeStatus(card.$3),
                       style: const TextStyle(fontSize: 12, color: VxColors.cyan),
                     ),
                   ],
@@ -151,7 +163,7 @@ class OverviewScreen extends StatelessWidget {
             children: [
               Text(t.recent, style: const TextStyle(color: VxColors.mist300)),
               const SizedBox(height: 12),
-              for (final c in mockConversations
+              for (final c in store.conversations
                   .where((e) => vxMatches(query, [e.name, e.preview, e.market]))
                   .take(4))
                 Padding(
@@ -214,6 +226,7 @@ class OverviewScreen extends StatelessWidget {
           ),
         ),
       ],
+    ),
     );
   }
 }

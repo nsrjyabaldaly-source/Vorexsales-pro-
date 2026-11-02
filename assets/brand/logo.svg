@@ -1,7 +1,7 @@
 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none">
   <rect width="64" height="64" rx="16" fill="#070A14"/>
   <defs>
-    <linearGradient id="vx-orbit" x1="8" y1="4" x2="58" y2="60">
+    <linearGradient id="vx-orbit" gradientUnits="userSpaceOnUse" x1="8" y1="4" x2="58" y2="60">
       <stop stop-color="#22E3D2"/>
       <stop offset="0.55" stop-color="#5B8CFF"/>
       <stop offset="1" stop-color="#8B6CFF"/>

@@ -11,6 +11,7 @@ class MobileNav extends StatelessWidget {
     required this.onMore,
     this.inboxKey,
     this.channelsKey,
+    this.inboxBadge = 0,
   });
 
   final int index;
@@ -18,6 +19,7 @@ class MobileNav extends StatelessWidget {
   final VoidCallback onMore;
   final GlobalKey? inboxKey;
   final GlobalKey? channelsKey;
+  final int inboxBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +53,7 @@ class MobileNav extends StatelessWidget {
                   icon: items[i].$1,
                   label: items[i].$2,
                   active: index == i,
+                  badge: i == 1 ? inboxBadge : 0,
                   onTap: () => onSelect(i),
                 ),
               ),
@@ -76,12 +79,14 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.active,
     required this.onTap,
+    this.badge = 0,
   });
 
   final IconData icon;
   final String label;
   final bool active;
   final VoidCallback onTap;
+  final int badge;
 
   @override
   Widget build(BuildContext context) {
@@ -100,10 +105,31 @@ class _NavItem extends StatelessWidget {
                 color: active ? VxColors.white08 : Colors.transparent,
                 borderRadius: BorderRadius.circular(VxRadii.input),
               ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: active ? VxColors.cyan : VxColors.mist400,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    icon,
+                    size: 20,
+                    color: active ? VxColors.cyan : VxColors.mist100,
+                  ),
+                  if (badge > 0)
+                    PositionedDirectional(
+                      top: -4,
+                      end: -6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: VxColors.cyan,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$badge',
+                          style: const TextStyle(fontSize: 9, color: VxColors.ink950, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(height: 2),
@@ -113,7 +139,7 @@ class _NavItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
-                color: active ? VxColors.cyan : VxColors.mist500,
+                color: active ? VxColors.cyan : VxColors.mist400,
               ),
             ),
           ],

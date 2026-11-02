@@ -2,22 +2,31 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vortexsales/core/api/vx_api_config.dart';
+import 'package:vortexsales/core/api/vx_store_api.dart';
+import 'package:vortexsales/core/notify/vx_notify.dart';
 import 'package:vortexsales/data/mock/mock_data.dart';
 
 class StoreController extends ChangeNotifier {
-  StoreController()
-      : catalog = List.of(seedCatalog),
+  StoreController({VxStoreApi? api})
+      : _api = api ?? VxStoreApi(),
+        catalog = List.of(seedCatalog),
         knowledge = List.of(seedKnowledge),
         bookings = List.of(seedBookings),
-        leads = List.of(seedLeads);
+        leads = List.of(seedLeads),
+        conversations = seedConversations.map((e) => Conversation.fromJson(e.toJson())).toList();
 
   static const _key = 'vx_store_v1';
 
+  final VxStoreApi _api;
   List<CatalogItem> catalog;
   List<KnowledgeItem> knowledge;
   List<BookingItem> bookings;
   List<LeadItem> leads;
+  List<Conversation> conversations;
   bool ready = false;
+  bool live = false;
+  bool ar = false;
 
   String _id(String prefix) =>
       '${prefix}_${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
@@ -28,25 +37,67 @@ class StoreController extends ChangeNotifier {
           .clamp(1, 999);
 
   Future<void> load() async {
-    final p = await SharedPreferences.getInstance();
-    final raw = p.getString(_key);
-    if (raw != null) {
-      try {
-        final parsed = json.decode(raw) as Map<String, dynamic>;
-        catalog = _parseList(parsed['catalog'], CatalogItem.fromJson) ??
-            List.of(seedCatalog);
-        knowledge = _parseList(parsed['knowledge'], KnowledgeItem.fromJson) ??
-            List.of(seedKnowledge);
-        bookings = _parseList(parsed['bookings'], BookingItem.fromJson) ??
-            List.of(seedBookings);
-        leads = _parseList(parsed['leads'], LeadItem.fromJson) ??
-            List.of(seedLeads);
-      } catch (_) {
-        /* keep seed */
-      }
-    }
+    await _readCache();
     ready = true;
     notifyListeners();
+    await refresh();
+  }
+
+  Future<void> refresh() async {
+    if (!VxApiConfig.configured) {
+      live = false;
+      notifyListeners();
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      ar = (prefs.getString('vx.locale') ?? '').startsWith('ar');
+      final remote = await Future.wait([
+        _api.catalog(),
+        _api.knowledge(),
+        _api.bookings(),
+        _api.leads(),
+        _api.inbox(),
+      ]);
+      catalog = remote[0] as List<CatalogItem>;
+      knowledge = remote[1] as List<KnowledgeItem>;
+      bookings = remote[2] as List<BookingItem>;
+      leads = remote[3] as List<LeadItem>;
+      conversations = remote[4] as List<Conversation>;
+      live = true;
+      await _persist();
+      try {
+        await VxNotify.sync(
+          conversations: conversations,
+          bookings: bookings,
+          ar: ar,
+        );
+      } catch (_) {}
+      notifyListeners();
+    } catch (_) {
+      live = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _readCache() async {
+    final p = await SharedPreferences.getInstance();
+    final raw = p.getString(_key);
+    if (raw == null) return;
+    try {
+      final parsed = json.decode(raw) as Map<String, dynamic>;
+      catalog = _parseList(parsed['catalog'], CatalogItem.fromJson) ?? catalog;
+      knowledge =
+          _parseList(parsed['knowledge'], KnowledgeItem.fromJson) ?? knowledge;
+      bookings =
+          _parseList(parsed['bookings'], BookingItem.fromJson) ?? bookings;
+      leads = _parseList(parsed['leads'], LeadItem.fromJson) ?? leads;
+      conversations =
+          _parseList(parsed['conversations'], Conversation.fromJson) ??
+              conversations;
+    } catch (_) {
+      /* keep seed */
+    }
   }
 
   List<T>? _parseList<T>(
@@ -56,7 +107,7 @@ class StoreController extends ChangeNotifier {
     if (raw is! List) return null;
     return [
       for (final row in raw)
-        if (row is Map<String, dynamic>) fromJson(row),
+        if (row is Map) fromJson(Map<String, dynamic>.from(row)),
     ];
   }
 
@@ -69,6 +120,7 @@ class StoreController extends ChangeNotifier {
         'knowledge': knowledge.map((e) => e.toJson()).toList(),
         'bookings': bookings.map((e) => e.toJson()).toList(),
         'leads': leads.map((e) => e.toJson()).toList(),
+        'conversations': conversations.map((e) => e.toJson()).toList(),
       }),
     );
   }
@@ -81,12 +133,14 @@ class StoreController extends ChangeNotifier {
     }
     notifyListeners();
     _persist();
+    _run(() => _api.saveCatalog(item));
   }
 
   void removeCatalog(String sku) {
     catalog = catalog.where((e) => e.sku != sku).toList();
     notifyListeners();
     _persist();
+    _run(() => _api.deleteCatalog(sku));
   }
 
   void upsertKnowledge(KnowledgeItem item, {bool isNew = false}) {
@@ -98,12 +152,14 @@ class StoreController extends ChangeNotifier {
     }
     notifyListeners();
     _persist();
+    _run(() => _api.saveKnowledge(item));
   }
 
   void removeKnowledge(String id) {
     knowledge = knowledge.where((e) => e.id != id).toList();
     notifyListeners();
     _persist();
+    _run(() => _api.deleteKnowledge(id));
   }
 
   void upsertBooking(BookingItem item, {bool isNew = false}) {
@@ -115,12 +171,14 @@ class StoreController extends ChangeNotifier {
     }
     notifyListeners();
     _persist();
+    _run(() => _api.saveBooking(item));
   }
 
   void removeBooking(String id) {
     bookings = bookings.where((e) => e.id != id).toList();
     notifyListeners();
     _persist();
+    _run(() => _api.deleteBooking(id));
   }
 
   void upsertLead(LeadItem item, {bool isNew = false}) {
@@ -132,12 +190,63 @@ class StoreController extends ChangeNotifier {
     }
     notifyListeners();
     _persist();
+    _run(() => _api.saveLead(item));
   }
 
   void removeLead(String id) {
     leads = leads.where((e) => e.id != id).toList();
     notifyListeners();
     _persist();
+    _run(() => _api.deleteLead(id));
+  }
+
+  int get needsYouCount =>
+      conversations.where((c) => c.status == 'needs_you').length;
+
+  Future<void> replyInbox(String id, String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    final line = ChatLine(
+      id: _id('m'),
+      role: 'merchant',
+      content: trimmed,
+    );
+    conversations = [
+      for (final row in conversations)
+        if (row.id == id)
+          row.copyWith(
+            preview: trimmed,
+            time: 'now',
+            status: 'needs_you',
+            handedOff: true,
+            messages: [...row.messages, line],
+          )
+        else
+          row,
+    ];
+    notifyListeners();
+    await _persist();
+    _run(() => _api.replyInbox(id, trimmed));
+  }
+
+  Future<void> inboxAction(String id, String action) async {
+    _run(() async {
+      await _api.inboxAction(id, action);
+      await refresh();
+    });
+  }
+
+  void _run(Future<void> Function() task) {
+    if (!VxApiConfig.configured) return;
+    () async {
+      try {
+        await task();
+        live = true;
+      } catch (_) {
+        live = false;
+      }
+      notifyListeners();
+    }();
   }
 }
 

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:vortexsales/core/state/app_controller.dart';
+import 'package:vortexsales/core/state/store_controller.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/widgets/vx_aurora.dart';
 import 'package:vortexsales/features/bookings/bookings_screen.dart';
@@ -24,7 +27,7 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int _index = 0;
   int _coachStep = 0;
   String _query = '';
@@ -33,18 +36,33 @@ class _AppShellState extends State<AppShell> {
   final _inboxKey = GlobalKey();
   final _channelsKey = GlobalKey();
   final _catalogKey = GlobalKey();
+  Timer? _poll;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _search.addListener(_onSearch);
+    _poll = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
+      StoreScope.of(context).refresh();
+    });
   }
 
   @override
   void dispose() {
+    _poll?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _search.removeListener(_onSearch);
     _search.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      StoreScope.of(context).refresh();
+    }
   }
 
   void _onSearch() {
@@ -131,6 +149,7 @@ class _AppShellState extends State<AppShell> {
                   onMore: _openMore,
                   inboxKey: _inboxKey,
                   channelsKey: _channelsKey,
+                  inboxBadge: StoreScope.of(context).needsYouCount,
                 ),
               ],
             ),

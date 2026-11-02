@@ -5,7 +5,6 @@ import 'package:vortexsales/core/theme/vx_radii.dart';
 import 'package:vortexsales/core/theme/vx_shadows.dart';
 
 /// Official VortexSales mark — vector paint matching web `logo.svg` 1:1.
-/// Painted (not JPG/SVG asset) so gradients stay sharp with many instances.
 class VortexMark extends StatelessWidget {
   const VortexMark({
     super.key,
@@ -13,6 +12,11 @@ class VortexMark extends StatelessWidget {
     this.glow = false,
     this.radius,
   });
+
+  const VortexMark.lockup({super.key})
+      : size = 32,
+        glow = true,
+        radius = 12;
 
   const VortexMark.chat({super.key, this.glow = false})
       : size = 32,
@@ -61,42 +65,19 @@ class _VortexMarkPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final s = size.shortestSide;
-    final scale = s / 64;
-    canvas.scale(scale);
+    canvas.scale(s / 64);
 
-    final bg = Paint()..color = VxColors.ink900;
     canvas.drawRRect(
-      RRect.fromRectAndRadius(const Rect.fromLTWH(0, 0, 64, 64), const Radius.circular(16)),
-      bg,
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(0, 0, 64, 64),
+        const Radius.circular(16),
+      ),
+      Paint()..color = VxColors.ink900,
     );
 
-    _orbitArc(
-      canvas,
-      radius: 22,
-      stroke: 3.4,
-      dash: 92,
-      gap: 46,
-      rotationDeg: -28,
-      shader: true,
-    );
-    _orbitArc(
-      canvas,
-      radius: 15.5,
-      stroke: 3.1,
-      dash: 64,
-      gap: 34,
-      rotationDeg: 38,
-      shader: true,
-    );
-    _orbitArc(
-      canvas,
-      radius: 8.5,
-      stroke: 3,
-      dash: 28,
-      gap: 26,
-      rotationDeg: -48,
-      shader: false,
-    );
+    _orbitArc(canvas, radius: 22, stroke: 3.4, dash: 92, gap: 46, rotationDeg: -28, shader: true);
+    _orbitArc(canvas, radius: 15.5, stroke: 3.1, dash: 64, gap: 34, rotationDeg: 38, shader: true);
+    _orbitArc(canvas, radius: 8.5, stroke: 3, dash: 28, gap: 26, rotationDeg: -48, shader: false);
 
     canvas.drawCircle(
       const Offset(32, 32),

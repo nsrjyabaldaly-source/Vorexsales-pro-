@@ -27,7 +27,7 @@ class AppTopbar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const VortexMark(size: 28, glow: true),
+          const VortexMark.lockup(),
           const SizedBox(width: 10),
           Expanded(
             child: SizedBox(

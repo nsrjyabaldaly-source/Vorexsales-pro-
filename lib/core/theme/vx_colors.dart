@@ -32,20 +32,20 @@ abstract final class VxColors {
   /// white / 7% — CSS hairline on web.
   static const hairline = Color(0x12FFFFFF);
 
-  /// white / 8% — glass border on web.
+  /// white / 8% — glass border on web `.glass` / `border-white/8`.
   static const glassBorder = Color(0x14FFFFFF);
   static const white08 = Color(0x14FFFFFF);
   static const white05 = Color(0x0DFFFFFF);
   static const selection = Color(0x4722E3D2);
 
-  /// Glass fill — matches web `.glass` (ink-800/ink-850 with alpha).
-  static const glassTop = Color(0xCC10182B);
-  static const glassBottom = Color(0xB80B1020);
+  /// Glass fill — web `.glass`: `rgba(16,24,43,0.78)` → `rgba(11,16,32,0.70)`.
+  static const glassTop = Color(0xC710182B);
+  static const glassBottom = Color(0xB30B1020);
 
-  /// Aurora blobs — web landing atmosphere (cyan + violet wash).
-  static const auroraCyan = Color(0x4022E3D2);
-  static const auroraViolet = Color(0x478B6CFF);
-  static const gridLine = Color(0x08FFFFFF);
+  /// Aurora — web `backgroundImage.aurora` (cyan 18%, violet 22%).
+  static const auroraCyan = Color(0x2E22E3D2);
+  static const auroraViolet = Color(0x388B6CFF);
+  static const gridLine = Color(0x0AFFFFFF);
 
   static const List<Color> brandGradient = [cyan, violet];
 }

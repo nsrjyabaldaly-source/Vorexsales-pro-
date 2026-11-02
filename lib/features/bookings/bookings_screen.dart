@@ -27,13 +27,13 @@ class _BookingsScreenState extends State<BookingsScreen> {
   Widget build(BuildContext context) {
     final t = VxL10n.of(context);
     final store = StoreScope.of(context);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+    return VxStoreScroll(
+      onRefresh: store.refresh,
       children: [
         VxPageHeader(
           title: t.bookingsTitle,
           subtitle: t.bookingsSub,
-          note: t.storeNote,
+          note: t.storeStatus(store.live),
           actionLabel: t.add,
           onAction: () => setState(() {
             _isNew = true;

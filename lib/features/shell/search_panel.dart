@@ -4,7 +4,6 @@ import 'package:vortexsales/core/search/vx_match.dart';
 import 'package:vortexsales/core/state/store_controller.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/theme/vx_radii.dart';
-import 'package:vortexsales/data/mock/mock_data.dart';
 
 class SearchHit {
   const SearchHit({
@@ -111,7 +110,7 @@ class SearchPanel extends StatelessWidget {
 
   List<SearchHit> _hits(VxL10n t, StoreController store) {
     final out = <SearchHit>[];
-    for (final c in mockConversations) {
+    for (final c in store.conversations) {
       if (!vxMatches(query, [c.name, c.preview, c.market, c.channel])) continue;
       out.add(
         SearchHit(

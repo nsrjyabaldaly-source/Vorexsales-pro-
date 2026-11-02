@@ -79,7 +79,11 @@ class VxButton extends StatelessWidget {
       button = DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(VxRadii.pill),
-          gradient: const LinearGradient(colors: VxColors.brandGradient),
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: VxColors.brandGradient,
+          ),
           boxShadow: enabled ? VxShadows.glow : null,
         ),
         child: Material(

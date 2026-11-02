@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vortexsales/core/ai/vx_closer.dart';
+import 'package:vortexsales/core/api/vx_chat_service.dart';
 import 'package:vortexsales/core/brand/vortex_mark.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
 import 'package:vortexsales/core/state/store_controller.dart';
@@ -26,6 +26,8 @@ class _WidgetPreviewScreenState extends State<WidgetPreviewScreen> {
   final _input = TextEditingController();
   late List<_Msg> _messages;
   bool _ready = false;
+  final _threadId =
+      'c_${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
 
   @override
   void didChangeDependencies() {
@@ -51,16 +53,23 @@ class _WidgetPreviewScreenState extends State<WidgetPreviewScreen> {
       _input.clear();
       _messages.add(_Msg('assistant', ''));
     });
-    final reply = VxCloser(
+    await for (final chunk in VxChatService().reply(
+      input: text,
       catalog: store.catalog,
       knowledge: store.knowledge,
       ar: t.isAr,
-    ).reply(text);
-    for (var i = 0; i < reply.length; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+      locale: t.info.code,
+      conversationId: _threadId,
+      channel: 'Widget',
+      history: [
+        for (final m in _messages.take(_messages.length - 2).where((m) => m.content.isNotEmpty))
+          {'role': m.role, 'content': m.content},
+      ],
+    )) {
       if (!mounted) return;
-      setState(() => _messages.last.content = reply.substring(0, i + 1));
+      setState(() => _messages.last.content += chunk);
     }
+    if (mounted) await store.refresh();
   }
 
   @override
@@ -109,7 +118,7 @@ class _WidgetPreviewScreenState extends State<WidgetPreviewScreen> {
                             padding: const EdgeInsets.all(12),
                             child: Row(
                               children: [
-                                const VortexMark(size: 28, glow: true),
+                                const VortexMark.chat(),
                                 const SizedBox(width: 8),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,

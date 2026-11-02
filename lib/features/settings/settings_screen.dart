@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:vortexsales/core/api/vx_api_client.dart';
+import 'package:vortexsales/core/api/vx_api_config.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
 import 'package:vortexsales/core/state/app_controller.dart';
+import 'package:vortexsales/core/state/store_controller.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/theme/vx_radii.dart';
 import 'package:vortexsales/core/widgets/vx_button.dart';
@@ -98,9 +101,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: VxColors.ink950,
                 borderRadius: BorderRadius.circular(VxRadii.input),
               ),
-              child: const SelectableText(
-                '<script src="https://vortexsales.app/embed.js" data-key="pk_luna_live"></script>',
-                style: TextStyle(fontSize: 12, color: VxColors.cyan),
+              child: SelectableText(
+                '<script src="${VxApiConfig.baseUrl}/widget.js" data-key="pk_luna_live" data-locale="${t.info.code}" async></script>',
+                style: const TextStyle(fontSize: 12, color: VxColors.cyan),
               ),
             ),
           ],
@@ -118,18 +121,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         );
       case 'server':
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(t.serverNote, style: const TextStyle(fontSize: 14, color: VxColors.mist400)),
-            const SizedBox(height: 16),
-            VxField(label: t.serverUrl, child: VxTextField(hint: t.emptyPlaceholder)),
-            const SizedBox(height: 12),
-            VxField(label: t.database, child: VxTextField(hint: t.emptyPlaceholder)),
-            const SizedBox(height: 12),
-            VxField(label: t.aiKey, child: VxTextField(hint: t.emptyPlaceholder)),
-          ],
-        );
+        return const _ServerPanel();
       case 'team':
         return Column(
           children: [
@@ -211,6 +203,122 @@ class _ChannelsPage extends StatelessWidget {
           const Expanded(child: ChannelsScreen()),
         ],
       ),
+    );
+  }
+}
+
+class _ServerPanel extends StatefulWidget {
+  const _ServerPanel();
+
+  @override
+  State<_ServerPanel> createState() => _ServerPanelState();
+}
+
+class _ServerPanelState extends State<_ServerPanel> {
+  late final TextEditingController _url;
+  VxHealth? _health;
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _url = TextEditingController(text: VxApiConfig.baseUrl);
+    _probe();
+  }
+
+  @override
+  void dispose() {
+    _url.dispose();
+    super.dispose();
+  }
+
+  Future<void> _probe() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await VxApiConfig.setBaseUrl(_url.text);
+      final health = await VxApiClient().health();
+      if (!mounted) return;
+      await StoreScope.of(context).refresh();
+      if (!mounted) return;
+      setState(() {
+        _health = health;
+        _busy = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _health = null;
+        _error = '$error';
+        _busy = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = VxL10n.of(context);
+    final health = _health;
+    final store = StoreScope.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(t.serverNote, style: const TextStyle(fontSize: 14, color: VxColors.mist400)),
+        const SizedBox(height: 12),
+        Text(t.keyStaysOnServer, style: const TextStyle(fontSize: 12, color: VxColors.mist500)),
+        const SizedBox(height: 8),
+        Text(
+          t.storeStatus(store.live),
+          style: TextStyle(
+            fontSize: 12,
+            color: store.live ? VxColors.cyan : VxColors.mist500,
+          ),
+        ),
+        const SizedBox(height: 16),
+        VxField(
+          label: t.serverUrl,
+          child: VxTextField(
+            controller: _url,
+            hint: VxApiConfig.fallback,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            VxPill(
+              label: '${t.serverUrl}: ${health == null ? t.emptyPlaceholder : t.filled}',
+              cyan: health != null,
+            ),
+            VxPill(
+              label: '${t.database}: ${health?.database == true ? t.filled : t.emptyPlaceholder}',
+              cyan: health?.database == true,
+            ),
+            VxPill(
+              label: '${t.aiKey}: ${health?.aiReady == true ? t.filled : t.emptyPlaceholder}',
+              cyan: health?.aiReady == true,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${t.provider}: ${health?.aiProvider ?? '—'} · ${t.mode}: ${health?.mode ?? '—'}',
+          style: const TextStyle(fontSize: 12, color: VxColors.mist500),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 8),
+          Text(_error!, style: const TextStyle(fontSize: 12, color: VxColors.rose)),
+        ],
+        const SizedBox(height: 16),
+        VxButton(
+          label: _busy ? '…' : t.checkConnection,
+          onPressed: _busy ? null : _probe,
+        ),
+      ],
     );
   }
 }

@@ -1,5 +1,21 @@
+class ChatLine {
+  ChatLine({required this.id, required this.role, required this.content});
+
+  factory ChatLine.fromJson(Map<String, dynamic> json) => ChatLine(
+        id: json['id'] as String? ?? '',
+        role: json['role'] as String? ?? 'user',
+        content: json['content'] as String? ?? '',
+      );
+
+  String id;
+  String role;
+  String content;
+
+  Map<String, dynamic> toJson() => {'id': id, 'role': role, 'content': content};
+}
+
 class Conversation {
-  const Conversation({
+  Conversation({
     required this.id,
     required this.name,
     required this.market,
@@ -8,16 +24,79 @@ class Conversation {
     required this.status,
     required this.intent,
     required this.channel,
-  });
+    List<ChatLine>? messages,
+    this.handedOff = false,
+    this.bookingId,
+  }) : messages = messages ?? [];
 
-  final String id;
-  final String name;
-  final String market;
-  final String preview;
-  final String time;
-  final String status;
-  final int intent;
-  final String channel;
+  factory Conversation.fromJson(Map<String, dynamic> json) {
+    final raw = json['messages'];
+    return Conversation(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      market: json['market'] as String? ?? '',
+      preview: json['preview'] as String? ?? '',
+      time: json['time'] as String? ?? '',
+      status: json['status'] as String? ?? 'open',
+      intent: (json['intent'] as num?)?.toInt() ?? 0,
+      channel: json['channel'] as String? ?? 'Widget',
+      handedOff: json['handedOff'] == true,
+      bookingId: json['bookingId'] as String?,
+      messages: [
+        if (raw is List)
+          for (final row in raw)
+            if (row is Map) ChatLine.fromJson(Map<String, dynamic>.from(row)),
+      ],
+    );
+  }
+
+  String id;
+  String name;
+  String market;
+  String preview;
+  String time;
+  String status;
+  int intent;
+  String channel;
+  List<ChatLine> messages;
+  bool handedOff;
+  String? bookingId;
+
+  Conversation copyWith({
+    String? preview,
+    String? time,
+    String? status,
+    List<ChatLine>? messages,
+    bool? handedOff,
+    String? bookingId,
+  }) =>
+      Conversation(
+        id: id,
+        name: name,
+        market: market,
+        preview: preview ?? this.preview,
+        time: time ?? this.time,
+        status: status ?? this.status,
+        intent: intent,
+        channel: channel,
+        messages: messages ?? this.messages,
+        handedOff: handedOff ?? this.handedOff,
+        bookingId: bookingId ?? this.bookingId,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'market': market,
+        'preview': preview,
+        'time': time,
+        'status': status,
+        'intent': intent,
+        'channel': channel,
+        'handedOff': handedOff,
+        'bookingId': bookingId,
+        'messages': messages.map((e) => e.toJson()).toList(),
+      };
 }
 
 class CatalogItem {
@@ -199,7 +278,7 @@ abstract final class MockStats {
   static const weekSeries = [42.0, 58.0, 51.0, 77.0, 69.0, 91.0, 104.0];
 }
 
-const mockConversations = [
+final seedConversations = [
   Conversation(
     id: 'c1',
     name: 'Amelia Berg',
@@ -209,6 +288,9 @@ const mockConversations = [
     status: 'open',
     intent: 86,
     channel: 'Widget',
+    messages: [
+      ChatLine(id: 'c1_m1', role: 'user', content: 'Do you have the navy coat in 36?'),
+    ],
   ),
   Conversation(
     id: 'c2',
@@ -219,6 +301,9 @@ const mockConversations = [
     status: 'booked',
     intent: 94,
     channel: 'Widget',
+    messages: [
+      ChatLine(id: 'c2_m1', role: 'user', content: 'أبي موعد تنظيف يوم الخميس بعد العصر'),
+    ],
   ),
   Conversation(
     id: 'c3',
@@ -229,6 +314,9 @@ const mockConversations = [
     status: 'needs_you',
     intent: 71,
     channel: 'Playground',
+    messages: [
+      ChatLine(id: 'c3_m1', role: 'user', content: 'Can we tour the riverside loft Saturday?'),
+    ],
   ),
   Conversation(
     id: 'c4',
@@ -239,6 +327,9 @@ const mockConversations = [
     status: 'open',
     intent: 63,
     channel: 'Widget',
+    messages: [
+      ChatLine(id: 'c4_m1', role: 'user', content: "What's included in the annual wellness plan?"),
+    ],
   ),
   Conversation(
     id: 'c5',
@@ -249,8 +340,13 @@ const mockConversations = [
     status: 'needs_you',
     intent: 58,
     channel: 'Widget',
+    messages: [
+      ChatLine(id: 'c5_m1', role: 'user', content: 'Is the whitening session safe during pregnancy?'),
+    ],
   ),
 ];
+
+final mockConversations = seedConversations;
 
 final seedCatalog = [
   CatalogItem(
