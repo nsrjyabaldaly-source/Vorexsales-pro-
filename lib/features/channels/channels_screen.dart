@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:vortexsales/core/api/vx_api_client.dart';
 import 'package:vortexsales/core/api/vx_api_config.dart';
 import 'package:vortexsales/core/api/vx_store_api.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
@@ -120,10 +121,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     final t = VxL10n.of(context);
     final snippet = _snippet.isEmpty ? _localSnippet(t) : _snippet;
     final later = [
-      (Icons.camera_alt_outlined, t.instagram),
-      (Icons.chat_outlined, t.messenger),
-      (Icons.music_note_outlined, t.tiktok),
-      (Icons.send_outlined, t.telegram),
+      (Icons.camera_alt_outlined, t.instagram, 'instagram'),
+      (Icons.chat_outlined, t.messenger, 'messenger'),
+      (Icons.music_note_outlined, t.tiktok, 'tiktok'),
+      (Icons.send_outlined, t.telegram, 'telegram'),
     ].where((ch) => vxMatches(widget.query, [ch.$2])).toList();
     final showWidget = vxMatches(widget.query, [t.channelWidget]);
     final showWa = vxMatches(widget.query, [t.whatsapp]);
@@ -240,7 +241,19 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                   VxButton(
                     label: t.connect,
                     variant: VxButtonVariant.secondary,
-                    onPressed: () => showChannelConnectLater(context, ch.$2),
+                    onPressed: () async {
+                      try {
+                        if (VxApiConfig.configured) {
+                          await VxApiClient().sendJson(
+                            VxApiPaths.channels,
+                            method: 'POST',
+                            body: {'kind': ch.$3},
+                          );
+                        }
+                      } catch (_) {}
+                      if (!context.mounted) return;
+                      showChannelConnectLater(context, ch.$2);
+                    },
                   ),
                 ],
               ),

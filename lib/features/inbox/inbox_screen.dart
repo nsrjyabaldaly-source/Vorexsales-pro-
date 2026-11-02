@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:vortexsales/core/api/vx_chat_service.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
 import 'package:vortexsales/core/search/vx_match.dart';
 import 'package:vortexsales/core/state/store_controller.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/theme/vx_radii.dart';
+import 'package:vortexsales/core/util/vx_whatsapp.dart';
 import 'package:vortexsales/core/widgets/vx_button.dart';
 import 'package:vortexsales/core/widgets/vx_glass.dart';
 import 'package:vortexsales/data/mock/mock_data.dart';
 
 class InboxScreen extends StatefulWidget {
-  const InboxScreen({super.key, this.query = ''});
+  const InboxScreen({
+    super.key,
+    this.query = '',
+    this.openId,
+    this.focusReply = false,
+    this.onOpened,
+  });
 
   final String query;
+  final String? openId;
+  final bool focusReply;
+  final VoidCallback? onOpened;
 
   @override
   State<InboxScreen> createState() => _InboxScreenState();
@@ -19,6 +30,27 @@ class InboxScreen extends StatefulWidget {
 
 class _InboxScreenState extends State<InboxScreen> {
   String? _openId;
+  bool _focusReply = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _openId = widget.openId;
+    _focusReply = widget.focusReply;
+    if (widget.openId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => widget.onOpened?.call());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant InboxScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.openId != null && widget.openId != oldWidget.openId) {
+      _openId = widget.openId;
+      _focusReply = widget.focusReply;
+      WidgetsBinding.instance.addPostFrameCallback((_) => widget.onOpened?.call());
+    }
+  }
 
   String _statusLabel(VxL10n t, String status) => switch (status) {
         'booked' => t.bookedStatus,
@@ -43,7 +75,11 @@ class _InboxScreenState extends State<InboxScreen> {
       return _Thread(
         conversation: current,
         statusLabel: _statusLabel(t, current.status),
-        onBack: () => setState(() => _openId = null),
+        focusReply: _focusReply,
+        onBack: () => setState(() {
+          _openId = null;
+          _focusReply = false;
+        }),
         onReply: (text) => store.replyInbox(current.id, text),
         onAction: (action) => store.inboxAction(current.id, action),
       );
@@ -87,7 +123,10 @@ class _InboxScreenState extends State<InboxScreen> {
                     itemBuilder: (context, i) {
                       final c = rows[i];
                       return InkWell(
-                        onTap: () => setState(() => _openId = c.id),
+                        onTap: () => setState(() {
+                          _openId = c.id;
+                          _focusReply = false;
+                        }),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: const BoxDecoration(
@@ -136,6 +175,7 @@ class _Thread extends StatefulWidget {
     required this.onBack,
     required this.onReply,
     required this.onAction,
+    this.focusReply = false,
   });
 
   final Conversation conversation;
@@ -143,6 +183,7 @@ class _Thread extends StatefulWidget {
   final VoidCallback onBack;
   final Future<void> Function(String text) onReply;
   final Future<void> Function(String action) onAction;
+  final bool focusReply;
 
   @override
   State<_Thread> createState() => _ThreadState();
@@ -150,10 +191,21 @@ class _Thread extends StatefulWidget {
 
 class _ThreadState extends State<_Thread> {
   final _input = TextEditingController();
+  final _focus = FocusNode();
+  bool _suggesting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.focusReply) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
+    }
+  }
 
   @override
   void dispose() {
     _input.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -164,13 +216,57 @@ class _ThreadState extends State<_Thread> {
     await widget.onReply(text);
   }
 
+  Future<void> _suggest() async {
+    if (_suggesting) return;
+    final t = VxL10n.of(context);
+    final store = StoreScope.of(context);
+    final conversation = widget.conversation;
+    final lastUser = [...conversation.messages.reversed]
+            .where((m) => m.role == 'user')
+            .map((m) => m.content)
+            .firstOrNull ??
+        conversation.preview;
+    setState(() => _suggesting = true);
+    final buf = StringBuffer();
+    await for (final chunk in VxChatService().reply(
+      input:
+          'Write a short merchant reply to this customer message. Reply only with the message text.\n\nCustomer: $lastUser',
+      catalog: store.catalog,
+      knowledge: store.knowledge,
+      ar: t.isAr,
+      locale: t.info.code,
+      conversationId: conversation.id,
+      channel: conversation.channel,
+      history: [
+        for (final m in conversation.messages.where((m) => m.content.isNotEmpty))
+          {'role': m.role, 'content': m.content},
+      ],
+    )) {
+      buf.write(chunk);
+    }
+    if (!mounted) return;
+    setState(() {
+      _suggesting = false;
+      _input.text = buf.toString().trim();
+      _input.selection = TextSelection.collapsed(offset: _input.text.length);
+    });
+    _focus.requestFocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = VxL10n.of(context);
+    final store = StoreScope.of(context);
     final conversation = widget.conversation;
     final lines = conversation.messages.isNotEmpty
         ? conversation.messages
         : [ChatLine(id: 'p', role: 'user', content: conversation.preview)];
+    final phone = store.leads
+        .where((l) => l.name.toLowerCase() == conversation.name.toLowerCase())
+        .map((l) => l.phone)
+        .where((p) => p.trim().isNotEmpty)
+        .firstOrNull;
+
     return Column(
       children: [
         Padding(
@@ -193,6 +289,12 @@ class _ThreadState extends State<_Thread> {
                   ],
                 ),
               ),
+              if ((phone ?? '').isNotEmpty)
+                IconButton(
+                  tooltip: t.openWhatsapp,
+                  onPressed: () => vxOpenWhatsApp(phone),
+                  icon: const Icon(Icons.chat, color: VxColors.cyan),
+                ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -292,7 +394,19 @@ class _ThreadState extends State<_Thread> {
         ),
         const Divider(height: 1, color: VxColors.hairline),
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: VxButton(
+              label: _suggesting ? '…' : t.suggestReply,
+              size: VxButtonSize.sm,
+              variant: VxButtonVariant.ghost,
+              onPressed: _suggesting ? null : _suggest,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
           child: Row(
             children: [
               Expanded(
@@ -300,6 +414,7 @@ class _ThreadState extends State<_Thread> {
                   height: 44,
                   child: TextField(
                     controller: _input,
+                    focusNode: _focus,
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                     onSubmitted: (_) => _send(),
                     decoration: InputDecoration(

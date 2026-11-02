@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:vortexsales/core/nav/vx_nav.dart';
 import 'package:vortexsales/core/state/app_controller.dart';
 import 'package:vortexsales/core/state/store_controller.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/widgets/vx_aurora.dart';
+import 'package:vortexsales/core/widgets/vx_link_strip.dart';
 import 'package:vortexsales/features/bookings/bookings_screen.dart';
 import 'package:vortexsales/features/catalog/catalog_screen.dart';
 import 'package:vortexsales/features/channels/channels_screen.dart';
@@ -32,6 +34,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int _coachStep = 0;
   String _query = '';
   bool _browsing = false;
+  String? _openConversationId;
+  bool _focusInboxReply = false;
   final _search = TextEditingController();
   final _inboxKey = GlobalKey();
   final _channelsKey = GlobalKey();
@@ -43,15 +47,18 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _search.addListener(_onSearch);
-    _poll = Timer.periodic(const Duration(seconds: 30), (_) {
+    VxNav.pending.addListener(_onNav);
+    _poll = Timer.periodic(const Duration(seconds: 15), (_) {
       if (!mounted) return;
       StoreScope.of(context).refresh();
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onNav());
   }
 
   @override
   void dispose() {
     _poll?.cancel();
+    VxNav.pending.removeListener(_onNav);
     WidgetsBinding.instance.removeObserver(this);
     _search.removeListener(_onSearch);
     _search.dispose();
@@ -62,7 +69,19 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
       StoreScope.of(context).refresh();
+      _onNav();
     }
+  }
+
+  void _onNav() {
+    final intent = VxNav.take();
+    if (intent == null || !mounted) return;
+    setState(() {
+      _index = intent.tab;
+      _browsing = false;
+      _openConversationId = intent.conversationId;
+      _focusInboxReply = intent.focusReply;
+    });
   }
 
   void _onSearch() {
@@ -81,6 +100,33 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     };
   }
 
+  Widget _pageFor(int index) {
+    return switch (index) {
+      0 => OverviewScreen(query: _query),
+      1 => InboxScreen(
+          query: _query,
+          openId: _openConversationId,
+          focusReply: _focusInboxReply,
+          onOpened: () => setState(() {
+            _openConversationId = null;
+            _focusInboxReply = false;
+          }),
+        ),
+      2 => ChannelsScreen(query: _query),
+      3 => BookingsScreen(query: _query),
+      4 => const PlaygroundScreen(),
+      5 => KnowledgeScreen(query: _query),
+      6 => CatalogScreen(query: _query, coachKey: _catalogKey),
+      7 => LeadsScreen(query: _query),
+      _ => SettingsScreen(
+          onOpenChannels: () => setState(() {
+            _index = 2;
+            _browsing = false;
+          }),
+        ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = VxScope.of(context);
@@ -96,45 +142,52 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                   bottom: false,
                   child: AppTopbar(
                     search: _search,
-                    onClear: () {
-                      _search.clear();
-                    },
+                    onClear: () => _search.clear(),
                   ),
+                ),
+                VxLinkStrip(
+                  onOpenServer: () => setState(() {
+                    _index = 8;
+                    _browsing = false;
+                  }),
                 ),
                 Expanded(
                   child: Stack(
                     children: [
-                      IndexedStack(
-                        index: _index,
-                        children: [
-                          OverviewScreen(query: _query),
-                          InboxScreen(query: _query),
-                          ChannelsScreen(query: _query),
-                          BookingsScreen(query: _query),
-                          const PlaygroundScreen(),
-                          KnowledgeScreen(query: _query),
-                          CatalogScreen(
-                            query: _query,
-                            coachKey: _catalogKey,
-                          ),
-                          LeadsScreen(query: _query),
-                          SettingsScreen(
-                            onOpenChannels: () => setState(() {
-                              _index = 2;
-                              _browsing = false;
-                            }),
-                          ),
-                        ],
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 280),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.02),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: KeyedSubtree(
+                          key: ValueKey<int>(_index),
+                          child: _pageFor(_index),
+                        ),
                       ),
                       if (_browsing)
                         ColoredBox(
                           color: VxColors.ink900,
                           child: SearchPanel(
                             query: _query,
-                            onOpen: (i) => setState(() {
-                              _index = i;
-                              _browsing = false;
-                            }),
+                            onOpen: (hit) {
+                              setState(() {
+                                _index = hit.tab;
+                                _browsing = false;
+                                _openConversationId = hit.conversationId;
+                                _focusInboxReply = hit.conversationId != null;
+                              });
+                            },
                           ),
                         ),
                     ],

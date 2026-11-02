@@ -10,8 +10,9 @@ import 'package:vortexsales/core/widgets/vx_button.dart';
 import 'package:vortexsales/core/widgets/vx_field.dart';
 import 'package:vortexsales/core/widgets/vx_glass.dart';
 import 'package:vortexsales/core/widgets/vx_pills.dart';
-import 'package:vortexsales/data/mock/mock_data.dart';
+import 'package:vortexsales/core/util/vx_export.dart';
 import 'package:vortexsales/features/channels/channels_screen.dart';
+
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -123,61 +124,138 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 'server':
         return const _ServerPanel();
       case 'team':
-        return Column(
-          children: [
-            for (final m in mockTeam)
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: VxColors.white05,
-                  borderRadius: BorderRadius.circular(VxRadii.input),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(child: Text(m.name, style: const TextStyle(color: Colors.white))),
-                    Text(
-                      '${m.role} · ${m.loc}',
-                      style: const TextStyle(fontSize: 12, color: VxColors.mist500),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        );
+        return const _TeamPanel();
       case 'billing':
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(t.planName, style: Theme.of(context).textTheme.displaySmall),
-            const SizedBox(height: 8),
-            Text(t.planBlurb, style: const TextStyle(color: VxColors.mist400)),
-            const SizedBox(height: 8),
-            Text(t.billingNote, style: const TextStyle(fontSize: 12, color: VxColors.mist500)),
-          ],
-        );
+        return const _BillingPanel();
       default:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            VxButton(
-              label: t.replay,
-              variant: VxButtonVariant.secondary,
-              onPressed: () => VxScope.of(context).replayHowTo(),
-            ),
-            const SizedBox(height: 16),
-            VxField(
-              label: t.publicName,
-              child: const VxTextField(initialValue: 'Luna Dental closer'),
-            ),
-            const SizedBox(height: 12),
-            VxField(
-              label: t.market,
-              child: const VxTextField(initialValue: 'Dubai · Asia/Dubai · AR + EN'),
-            ),
-          ],
-        );
+        return const _AgentPanel();
     }
+  }
+}
+
+class _AgentPanel extends StatefulWidget {
+  const _AgentPanel();
+
+  @override
+  State<_AgentPanel> createState() => _AgentPanelState();
+}
+
+class _AgentPanelState extends State<_AgentPanel> {
+  late final TextEditingController _name;
+  late final TextEditingController _market;
+  bool _busy = false;
+  String? _note;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: 'Luna Dental closer');
+    _market = TextEditingController(text: 'Dubai · Asia/Dubai · AR + EN');
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _market.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    if (!VxApiConfig.configured) return;
+    try {
+      final json = await VxApiClient().getJson(VxApiPaths.agent);
+      final agent = json['agent'];
+      if (agent is Map) {
+        _name.text = (agent['publicName'] as String?)?.trim().isNotEmpty == true
+            ? agent['publicName'] as String
+            : _name.text;
+        _market.text = (agent['market'] as String?)?.trim().isNotEmpty == true
+            ? agent['market'] as String
+            : _market.text;
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _save() async {
+    final t = VxL10n.of(context);
+    setState(() {
+      _busy = true;
+      _note = null;
+    });
+    try {
+      if (VxApiConfig.configured) {
+        await VxApiClient().sendJson(
+          VxApiPaths.agent,
+          method: 'POST',
+          body: {
+            'publicName': _name.text.trim(),
+            'market': _market.text.trim(),
+          },
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _note = t.storeNote;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _note = '$e';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = VxL10n.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        VxButton(
+          label: t.replay,
+          variant: VxButtonVariant.secondary,
+          onPressed: () => VxScope.of(context).replayHowTo(),
+        ),
+        const SizedBox(height: 16),
+        VxField(
+          label: t.publicName,
+          child: VxTextField(controller: _name),
+        ),
+        const SizedBox(height: 12),
+        VxField(
+          label: t.market,
+          child: VxTextField(controller: _market),
+        ),
+        if (_note != null) ...[
+          const SizedBox(height: 8),
+          Text(_note!, style: const TextStyle(fontSize: 12, color: VxColors.mist400)),
+        ],
+        const SizedBox(height: 16),
+        VxButton(
+          label: _busy ? '…' : t.save,
+          onPressed: _busy ? null : _save,
+        ),
+        const SizedBox(height: 12),
+        VxButton(
+          label: t.exportData,
+          variant: VxButtonVariant.secondary,
+          onPressed: () {
+            final store = StoreScope.of(context);
+            vxShareExport(catalog: store.catalog, leads: store.leads);
+          },
+        ),
+        const SizedBox(height: 12),
+        VxButton(
+          label: t.logout,
+          variant: VxButtonVariant.secondary,
+          onPressed: () => VxScope.of(context).logout(),
+        ),
+      ],
+    );
   }
 }
 
@@ -318,6 +396,157 @@ class _ServerPanelState extends State<_ServerPanel> {
           label: _busy ? '…' : t.checkConnection,
           onPressed: _busy ? null : _probe,
         ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            VxPill(
+              label: 'Production',
+              cyan: VxApiConfig.baseUrl.contains('vorexsales-pro'),
+              onTap: () {
+                _url.text = VxApiConfig.fallback;
+                _probe();
+              },
+            ),
+            VxPill(
+              label: 'Local',
+              cyan: VxApiConfig.baseUrl.contains('127.0.0.1'),
+              onTap: () {
+                _url.text = VxApiConfig.localDev;
+                _probe();
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _TeamPanel extends StatefulWidget {
+  const _TeamPanel();
+
+  @override
+  State<_TeamPanel> createState() => _TeamPanelState();
+}
+
+class _TeamPanelState extends State<_TeamPanel> {
+  List<Map<String, dynamic>> _items = const [];
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _busy = true);
+    try {
+      if (VxApiConfig.configured) {
+        final json = await VxApiClient().getJson(VxApiPaths.team);
+        final items = json['items'];
+        if (items is List) {
+          _items = [
+            for (final row in items)
+              if (row is Map) Map<String, dynamic>.from(row),
+          ];
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_busy && _items.isEmpty) {
+      return const Text('…', style: TextStyle(color: VxColors.mist500));
+    }
+    return Column(
+      children: [
+        for (final m in _items)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: VxColors.white05,
+              borderRadius: BorderRadius.circular(VxRadii.input),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${m['name'] ?? ''}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                Text(
+                  '${m['role'] ?? ''} · ${m['loc'] ?? ''}',
+                  style: const TextStyle(fontSize: 12, color: VxColors.mist500),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _BillingPanel extends StatefulWidget {
+  const _BillingPanel();
+
+  @override
+  State<_BillingPanel> createState() => _BillingPanelState();
+}
+
+class _BillingPanelState extends State<_BillingPanel> {
+  Map<String, dynamic>? _billing;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _busy = true);
+    try {
+      if (VxApiConfig.configured) {
+        final json = await VxApiClient().getJson(VxApiPaths.billing);
+        final billing = json['billing'];
+        if (billing is Map) _billing = Map<String, dynamic>.from(billing);
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = VxL10n.of(context);
+    final b = _billing;
+    if (_busy && b == null) {
+      return const Text('…', style: TextStyle(color: VxColors.mist500));
+    }
+    final plan = '${b?['plan'] ?? 'pro'}'.toUpperCase();
+    final used = b?['conversationsUsed'] ?? '—';
+    final limit = b?['conversationsLimit'] ?? '—';
+    final renews = b?['renewsAt'] ?? '—';
+    final status = '${b?['status'] ?? 'trial'}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$plan · $status', style: Theme.of(context).textTheme.displaySmall),
+        const SizedBox(height: 8),
+        Text(
+          t.isAr
+              ? 'محادثات $used / $limit · يتجدد $renews'
+              : 'Conversations $used / $limit · renews $renews',
+          style: const TextStyle(color: VxColors.mist400),
+        ),
+        const SizedBox(height: 8),
+        Text(t.billingNote, style: const TextStyle(fontSize: 12, color: VxColors.mist500)),
       ],
     );
   }

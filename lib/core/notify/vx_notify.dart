@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:vortexsales/core/nav/vx_nav.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/data/mock/mock_data.dart';
 
@@ -25,14 +26,35 @@ abstract final class VxNotify {
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         iOS: DarwinInitializationSettings(),
       );
-      await _plugin.initialize(init);
+      await _plugin.initialize(
+        init,
+        onDidReceiveNotificationResponse: _onTap,
+      );
       await _plugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
+      final launch = await _plugin.getNotificationAppLaunchDetails();
+      if (launch?.didNotificationLaunchApp == true) {
+        _onTap(launch!.notificationResponse!);
+      }
       _ready = true;
     } catch (_) {
       _ready = false;
+    }
+  }
+
+  static void _onTap(NotificationResponse response) {
+    final payload = response.payload ?? '';
+    if (payload.startsWith('inbox:')) {
+      final id = payload.substring(6);
+      VxNav.open(
+        VxNavIntent(tab: 1, conversationId: id, focusReply: true),
+      );
+      return;
+    }
+    if (payload.startsWith('booking:')) {
+      VxNav.open(VxNavIntent(tab: 3, bookingId: payload.substring(8)));
     }
   }
 
@@ -64,6 +86,7 @@ abstract final class VxNotify {
           ar ? 'تحتاجك في الصندوق' : 'Inbox needs you',
           fresh.first.preview,
           details,
+          payload: 'inbox:${fresh.first.id}',
         );
       }
       await p.setStringList(
@@ -82,6 +105,7 @@ abstract final class VxNotify {
         const Duration(minutes: 15),
         details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: 'inbox:${needs.first.id}',
       );
     } else {
       await _plugin.cancel(100);
@@ -95,15 +119,16 @@ abstract final class VxNotify {
       }
       final when = DateTime.tryParse(item.when);
       if (when == null) continue;
-      final fire = when.toUtc().subtract(const Duration(minutes: 30));
+      final fire = when.toUtc().subtract(const Duration(hours: 1));
       if (fire.isBefore(DateTime.now().toUtc())) continue;
       await _plugin.zonedSchedule(
         nid,
-        ar ? 'موعد بعد نصف ساعة' : 'Booking in 30 minutes',
+        ar ? 'موعد بعد ساعة' : 'Booking in 1 hour',
         '${item.who} · ${item.service}',
         tz.TZDateTime.from(fire, tz.UTC),
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: 'booking:${item.id}',
       );
     }
   }

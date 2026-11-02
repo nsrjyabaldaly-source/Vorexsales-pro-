@@ -1,8 +1,13 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:vortexsales/core/api/vx_api_client.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
 import 'package:vortexsales/core/search/vx_match.dart';
 import 'package:vortexsales/core/state/store_controller.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
+import 'package:vortexsales/core/widgets/vx_button.dart';
 import 'package:vortexsales/core/widgets/vx_field.dart';
 import 'package:vortexsales/core/widgets/vx_glass.dart';
 import 'package:vortexsales/core/widgets/vx_page_header.dart';
@@ -21,6 +26,67 @@ class KnowledgeScreen extends StatefulWidget {
 class _KnowledgeScreenState extends State<KnowledgeScreen> {
   KnowledgeItem? _form;
   bool _isNew = false;
+  bool _busy = false;
+  String? _note;
+
+  Future<void> _pickAndUpload() async {
+    if (_busy) return;
+    final t = VxL10n.of(context);
+    final store = StoreScope.of(context);
+    final picked = await FilePicker.platform.pickFiles(
+      withData: true,
+      type: FileType.custom,
+      allowedExtensions: const ['txt', 'md', 'pdf', 'png', 'jpg', 'jpeg', 'webp'],
+    );
+    if (picked == null || picked.files.isEmpty) return;
+    final file = picked.files.first;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      setState(() => _note = t.empty);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _note = null;
+    });
+    try {
+      await VxApiClient().uploadFile(
+        bytes: bytes,
+        filename: file.name,
+        caption: file.name,
+      );
+      final ext = (file.extension ?? '').toLowerCase();
+      final decoded = utf8.decode(bytes.take(12000).toList(), allowMalformed: true);
+      final looksText = ext == 'txt' ||
+          ext == 'md' ||
+          decoded.contains(RegExp(r'[\u0600-\u06FFa-zA-Z]{3,}'));
+      final body = looksText ? decoded.trim() : 'Uploaded file: ${file.name}';
+      store.upsertKnowledge(
+        KnowledgeItem(
+          id: '',
+          title: file.name,
+          type: ext.isEmpty ? 'File' : ext.toUpperCase(),
+          body: body,
+          chunks: store.chunksOf(body),
+          status: 'ready',
+          updated: DateTime.now().toIso8601String().substring(0, 10),
+        ),
+        isNew: true,
+      );
+      await store.refresh();
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _note = t.storeStatus(store.live);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _note = '$e';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,20 +99,33 @@ class _KnowledgeScreenState extends State<KnowledgeScreen> {
           title: t.knowledgeTitle,
           subtitle: t.knowledgeSub,
           note: t.storeStatus(store.live),
-          actionLabel: t.upload,
-          onAction: () => setState(() {
-            _isNew = true;
-            _form = KnowledgeItem(
-              id: '',
-              title: '',
-              type: 'Text',
-              body: '',
-              chunks: 1,
-              status: 'ready',
-              updated: DateTime.now().toIso8601String().substring(0, 10),
-            );
-          }),
+          actionLabel: _busy ? '…' : t.upload,
+          onAction: _busy ? null : _pickAndUpload,
         ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: VxButton(
+            label: t.add,
+            variant: VxButtonVariant.ghost,
+            onPressed: () => setState(() {
+              _isNew = true;
+              _form = KnowledgeItem(
+                id: '',
+                title: '',
+                type: 'Text',
+                body: '',
+                chunks: 1,
+                status: 'ready',
+                updated: DateTime.now().toIso8601String().substring(0, 10),
+              );
+            }),
+          ),
+        ),
+        if (_note != null) ...[
+          const SizedBox(height: 8),
+          Text(_note!, style: const TextStyle(fontSize: 12, color: VxColors.mist400)),
+        ],
         if (_form != null) ...[
           const SizedBox(height: 16),
           VxStoreForm(

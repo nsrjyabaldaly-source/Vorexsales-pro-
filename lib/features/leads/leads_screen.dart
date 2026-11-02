@@ -8,6 +8,8 @@ import 'package:vortexsales/core/widgets/vx_field.dart';
 import 'package:vortexsales/core/widgets/vx_glass.dart';
 import 'package:vortexsales/core/widgets/vx_page_header.dart';
 import 'package:vortexsales/core/widgets/vx_pills.dart';
+import 'package:vortexsales/core/util/vx_whatsapp.dart';
+import 'package:vortexsales/core/widgets/vx_button.dart';
 import 'package:vortexsales/core/widgets/vx_store_form.dart';
 import 'package:vortexsales/data/mock/mock_data.dart';
 
@@ -118,6 +120,20 @@ class _LeadsScreenState extends State<LeadsScreen> {
                     '${lead.value} ${lead.currency} · ${lead.source}',
                     style: const TextStyle(fontSize: 12, color: VxColors.mist500),
                   ),
+                  if (lead.phone.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    VxButton(
+                      label: t.openWhatsapp,
+                      size: VxButtonSize.sm,
+                      variant: VxButtonVariant.ghost,
+                      onPressed: () => vxOpenWhatsApp(
+                        lead.phone,
+                        text: t.isAr
+                            ? 'مرحباً ${lead.name}، معك VortexSales'
+                            : 'Hi ${lead.name}, this is VortexSales',
+                      ),
+                    ),
+                  ],
                   VxRowActions(
                     onEdit: () => setState(() {
                       _isNew = false;

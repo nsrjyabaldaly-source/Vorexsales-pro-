@@ -12,6 +12,9 @@ class SearchHit {
     required this.section,
     required this.title,
     required this.subtitle,
+    this.conversationId,
+    this.leadId,
+    this.sku,
   });
 
   final int tab;
@@ -19,6 +22,9 @@ class SearchHit {
   final String section;
   final String title;
   final String subtitle;
+  final String? conversationId;
+  final String? leadId;
+  final String? sku;
 }
 
 class SearchPanel extends StatelessWidget {
@@ -29,7 +35,7 @@ class SearchPanel extends StatelessWidget {
   });
 
   final String query;
-  final ValueChanged<int> onOpen;
+  final ValueChanged<SearchHit> onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +74,7 @@ class SearchPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(VxRadii.input),
               child: InkWell(
                 borderRadius: BorderRadius.circular(VxRadii.input),
-                onTap: () => onOpen(hit.tab),
+                onTap: () => onOpen(hit),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   child: Row(
@@ -119,6 +125,22 @@ class SearchPanel extends StatelessWidget {
           section: t.inbox,
           title: c.name,
           subtitle: c.preview,
+          conversationId: c.id,
+        ),
+      );
+    }
+    for (final lead in store.leads) {
+      if (!vxMatches(query, [lead.name, lead.email, lead.phone, lead.source])) {
+        continue;
+      }
+      out.add(
+        SearchHit(
+          tab: 7,
+          icon: Icons.people_outline,
+          section: t.leads,
+          title: lead.name,
+          subtitle: [lead.phone, lead.email].where((e) => e.trim().isNotEmpty).join(' · '),
+          leadId: lead.id,
         ),
       );
     }
@@ -133,6 +155,7 @@ class SearchPanel extends StatelessWidget {
           section: t.catalog,
           title: t.isAr ? item.nameAr : item.name,
           subtitle: item.sku,
+          sku: item.sku,
         ),
       );
     }
@@ -157,20 +180,6 @@ class SearchPanel extends StatelessWidget {
           section: t.bookings,
           title: b.who,
           subtitle: b.service,
-        ),
-      );
-    }
-    for (final lead in store.leads) {
-      if (!vxMatches(query, [lead.name, lead.email, lead.phone, lead.source])) {
-        continue;
-      }
-      out.add(
-        SearchHit(
-          tab: 7,
-          icon: Icons.people_outline,
-          section: t.leads,
-          title: lead.name,
-          subtitle: lead.email,
         ),
       );
     }

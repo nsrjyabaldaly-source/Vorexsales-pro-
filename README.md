@@ -1,17 +1,35 @@
-# vortexsales
+# VortexSales (Flutter)
 
-A new Flutter project.
+Phone client for [AMREKA2](https://vorexsales-pro-7.vercel.app). No AI secrets in this app — only the public API origin.
 
-## Getting Started
+## Run
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter run --dart-define=VX_API_BASE=https://vorexsales-pro-7.vercel.app
+```
 
-A few resources to get you started if this is your first Flutter project:
+Local web server:
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+flutter run --dart-define=VX_API_BASE=http://127.0.0.1:3002
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Or set **Settings → Server** inside the app. Default without a define is production.
+
+## Release Android
+
+1. Copy `android/key.properties.example` → `android/key.properties`
+2. Create `android/keystore/vortexsales-upload.jks` (never commit it)
+3. `flutter build apk --release --dart-define=VX_API_BASE=https://vorexsales-pro-7.vercel.app`
+
+Cleartext HTTP is blocked in release; debug may still hit localhost.
+
+## Checks
+
+```bash
+flutter test
+flutter analyze
+```
+
+Store upload steps: [docs/STORE_RELEASE.md](docs/STORE_RELEASE.md).

@@ -3,7 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Public web origin only. AI keys stay on the AMREKA2 server.
 abstract final class VxApiConfig {
   static const defined = String.fromEnvironment('VX_API_BASE');
-  static const fallback = 'http://127.0.0.1:3002';
+  /// Production VortexSales API. Override with --dart-define or Settings → Server.
+  static const fallback = 'https://vorexsales-pro-7.vercel.app';
+  static const localDev = 'http://127.0.0.1:3002';
   static const _pref = 'vx.apiBase';
 
   static String baseUrl = defined;
@@ -45,6 +47,9 @@ abstract final class VxApiPaths {
   static const inbox = '/api/inbox';
   static const channels = '/api/channels';
   static const auth = '/api/auth';
+  static const agent = '/api/agent';
+  static const team = '/api/team';
+  static const billing = '/api/billing';
   static const ragQuery = '/api/rag/query';
   static const ragIngest = '/api/rag/ingest';
   static const upload = '/api/upload';

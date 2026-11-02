@@ -137,6 +137,32 @@ class VxApiClient {
     }
   }
 
+  /// Multipart upload for knowledge files. Keys stay on the server.
+  Future<Map<String, dynamic>> uploadFile({
+    required List<int> bytes,
+    required String filename,
+    String? caption,
+  }) async {
+    _ensureConfigured();
+    final req = http.MultipartRequest(
+      'POST',
+      VxApiConfig.api(VxApiPaths.upload),
+    );
+    req.headers.addAll({
+      if (VxSession.token.isNotEmpty)
+        'Authorization': 'Bearer ${VxSession.token}',
+    });
+    req.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: filename),
+    );
+    if (caption != null && caption.trim().isNotEmpty) {
+      req.fields['caption'] = caption.trim();
+    }
+    final streamed = await _http.send(req).timeout(_timeout);
+    final res = await http.Response.fromStream(streamed);
+    return _decode(res);
+  }
+
   void _ensureConfigured() {
     if (!VxApiConfig.configured) {
       throw VxApiException(

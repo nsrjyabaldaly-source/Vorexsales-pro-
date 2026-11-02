@@ -83,6 +83,22 @@ class VxL10n {
   String get hasAccount => _s('auth.hasAccount');
   String get createAccount => _s('auth.create');
   String get login => _s('auth.login');
+  String get logout => _s('auth.logout');
+  String get linkLive =>
+      isAr ? 'متصل بالسيرفر' : 'Connected to server';
+  String get linkOffline =>
+      isAr ? 'أوفلاين — تعرض النسخة المحلية' : 'Offline — showing on-device copy';
+  String get linkSession =>
+      isAr ? 'انتهت الجلسة — ادخل من جديد' : 'Session expired — sign in again';
+  String get suggestReply =>
+      isAr ? 'اقترح رداً' : 'Suggest reply';
+  String get exportData =>
+      isAr ? 'تصدير الكتالوج والعملاء' : 'Export catalog & leads';
+  String get openWhatsapp =>
+      isAr ? 'افتح واتساب' : 'Open WhatsApp';
+  String get demoBadge => isAr ? 'عرض تجريبي' : 'Demo';
+  String get previewLocale =>
+      isAr ? 'معاينة إنجليزي' : 'Preview Arabic';
 
   String get onboardTitle => _s('onboarding.title');
   String stepOf(int n) => _s('onboarding.step', {'n': '$n'});

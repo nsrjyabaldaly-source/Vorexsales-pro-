@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:vortexsales/core/analytics/vx_week.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
 import 'package:vortexsales/core/search/vx_match.dart';
 import 'package:vortexsales/core/state/store_controller.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/theme/vx_radii.dart';
 import 'package:vortexsales/core/widgets/vx_glass.dart';
-import 'package:vortexsales/data/mock/mock_data.dart';
 
 class OverviewScreen extends StatelessWidget {
   const OverviewScreen({super.key, this.query = ''});
@@ -32,7 +32,12 @@ class OverviewScreen extends StatelessWidget {
       (t.newLeads, fmt.format(store.leads.length), store.live),
       (t.closeRate, '$close%', store.live),
     ];
-    final max = MockStats.weekSeries.reduce((a, b) => a > b ? a : b);
+    final week = vxWeekSeries(
+      conversations: store.conversations,
+      bookings: store.bookings,
+      leads: store.leads,
+    );
+    final max = week.reduce((a, b) => a > b ? a : b).clamp(1, double.infinity);
 
     return RefreshIndicator(
       color: VxColors.cyan,
@@ -96,7 +101,7 @@ class OverviewScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    for (final n in MockStats.weekSeries) ...[
+                    for (final n in week) ...[
                       Expanded(
                         child: Align(
                           alignment: Alignment.bottomCenter,

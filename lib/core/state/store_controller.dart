@@ -2,13 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vortexsales/core/api/vx_api_client.dart';
 import 'package:vortexsales/core/api/vx_api_config.dart';
 import 'package:vortexsales/core/api/vx_store_api.dart';
 import 'package:vortexsales/core/notify/vx_notify.dart';
 import 'package:vortexsales/data/mock/mock_data.dart';
 
 class StoreController extends ChangeNotifier {
-  StoreController({VxStoreApi? api})
+  StoreController({VxStoreApi? api, this.onSessionExpired})
       : _api = api ?? VxStoreApi(),
         catalog = List.of(seedCatalog),
         knowledge = List.of(seedKnowledge),
@@ -17,8 +18,11 @@ class StoreController extends ChangeNotifier {
         conversations = seedConversations.map((e) => Conversation.fromJson(e.toJson())).toList();
 
   static const _key = 'vx_store_v1';
+  static const _demoKey = 'vx_store_demo_v1';
 
   final VxStoreApi _api;
+  final Future<void> Function()? onSessionExpired;
+  bool demoMode = false;
   List<CatalogItem> catalog;
   List<KnowledgeItem> knowledge;
   List<BookingItem> bookings;
@@ -36,7 +40,8 @@ class StoreController extends ChangeNotifier {
           .ceil()
           .clamp(1, 999);
 
-  Future<void> load() async {
+  Future<void> load({bool demo = false}) async {
+    demoMode = demo;
     await _readCache();
     ready = true;
     notifyListeners();
@@ -74,6 +79,12 @@ class StoreController extends ChangeNotifier {
         );
       } catch (_) {}
       notifyListeners();
+    } on VxApiException catch (e) {
+      live = false;
+      if (e.status == 401) {
+        await onSessionExpired?.call();
+      }
+      notifyListeners();
     } catch (_) {
       live = false;
       notifyListeners();
@@ -82,7 +93,7 @@ class StoreController extends ChangeNotifier {
 
   Future<void> _readCache() async {
     final p = await SharedPreferences.getInstance();
-    final raw = p.getString(_key);
+    final raw = p.getString(demoMode ? _demoKey : _key);
     if (raw == null) return;
     try {
       final parsed = json.decode(raw) as Map<String, dynamic>;
@@ -114,7 +125,7 @@ class StoreController extends ChangeNotifier {
   Future<void> _persist() async {
     final p = await SharedPreferences.getInstance();
     await p.setString(
-      _key,
+      demoMode ? _demoKey : _key,
       json.encode({
         'catalog': catalog.map((e) => e.toJson()).toList(),
         'knowledge': knowledge.map((e) => e.toJson()).toList(),

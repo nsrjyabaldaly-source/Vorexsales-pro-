@@ -73,6 +73,21 @@ class AppTopbar extends StatelessWidget {
               ),
             ),
           ),
+          if (app.demoWorkspace) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: VxColors.violet.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(VxRadii.pill),
+                border: Border.all(color: VxColors.violet.withValues(alpha: 0.35)),
+              ),
+              child: Text(
+                t.demoBadge,
+                style: const TextStyle(fontSize: 11, color: VxColors.violetGlow),
+              ),
+            ),
+          ],
           const SizedBox(width: 4),
           IconButton(
             tooltip: t.replay,
