@@ -18,8 +18,8 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _name = TextEditingController(text: 'Muhanad Vortex');
-  final _email = TextEditingController(text: 'muhanad@vortex.llc');
-  final _password = TextEditingController(text: '••••••••');
+  final _email = TextEditingController();
+  final _password = TextEditingController();
 
   @override
   void dispose() {
@@ -70,11 +70,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: VxTextField(controller: _password, obscure: true),
                 ),
                 const SizedBox(height: 20),
+                if (app.authError != null) ...[
+                  Text(
+                    t.signUpBody,
+                    style: const TextStyle(fontSize: 13, color: VxColors.violet),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 VxButton(
                   label: t.createAccount,
                   expanded: true,
                   size: VxButtonSize.lg,
-                  onPressed: app.register,
+                  onPressed: app.authBusy
+                      ? null
+                      : () => app.register(
+                            name: _name.text,
+                            email: _email.text,
+                            password: _password.text,
+                          ),
                 ),
                 const SizedBox(height: 20),
                 Wrap(

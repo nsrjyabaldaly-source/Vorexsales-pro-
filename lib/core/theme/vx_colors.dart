@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// VortexSales palette — copied 1:1 from AMREKA2 `tailwind.config.ts` + `globals.css`.
+/// VortexSales palette — matched to AMREKA2 `tailwind.config` + `globals.css`.
 abstract final class VxColors {
   static const ink950 = Color(0xFF04060C);
   static const ink900 = Color(0xFF070A14);
@@ -29,15 +29,20 @@ abstract final class VxColors {
   static const rose = Color(0xFFF43F5E);
   static const roseHover = Color(0xFFFB7185);
 
+  /// white / 7% — CSS hairline on web.
   static const hairline = Color(0x12FFFFFF);
+
+  /// white / 8% — glass border on web `.glass` / `border-white/8`.
   static const glassBorder = Color(0x14FFFFFF);
   static const white08 = Color(0x14FFFFFF);
   static const white05 = Color(0x0DFFFFFF);
   static const selection = Color(0x4722E3D2);
 
+  /// Glass fill — web `.glass`: `rgba(16,24,43,0.78)` → `rgba(11,16,32,0.70)`.
   static const glassTop = Color(0xC710182B);
   static const glassBottom = Color(0xB30B1020);
 
+  /// Aurora — web `backgroundImage.aurora` (cyan 18%, violet 22%).
   static const auroraCyan = Color(0x2E22E3D2);
   static const auroraViolet = Color(0x388B6CFF);
   static const gridLine = Color(0x0AFFFFFF);

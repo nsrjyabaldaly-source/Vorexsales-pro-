@@ -53,19 +53,19 @@ abstract final class VxTypography {
       bodyLarge: TextStyle(
         fontFamily: family,
         fontSize: 16,
-        height: 1.5,
+        height: 1.55,
         color: VxColors.mist100,
       ),
       bodyMedium: TextStyle(
         fontFamily: family,
         fontSize: 14,
-        height: 1.5,
+        height: 1.55,
         color: VxColors.mist100,
       ),
       bodySmall: TextStyle(
         fontFamily: family,
         fontSize: 12,
-        height: 1.4,
+        height: 1.45,
         color: VxColors.mist400,
       ),
       labelSmall: TextStyle(

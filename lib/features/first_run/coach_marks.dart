@@ -77,8 +77,8 @@ class _CoachMarksState extends State<CoachMarks> {
     return Positioned.fill(
       child: Stack(
         children: [
-          const Positioned.fill(
-            child: ModalBarrier(color: Color(0x8C04060C)),
+          Positioned.fill(
+            child: _CoachScrim(hole: box?.inflate(pad)),
           ),
           if (box != null)
             Positioned(
@@ -153,5 +153,70 @@ class _CoachMarksState extends State<CoachMarks> {
         ],
       ),
     );
+  }
+}
+
+/// Dims the shell but leaves a hole over the marked control so that tap lands.
+class _CoachScrim extends StatelessWidget {
+  const _CoachScrim({required this.hole});
+
+  final Rect? hole;
+  static const _color = Color(0x8C04060C);
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        final hole = _holeInside(this.hole, size);
+        if (hole == null) return const ColoredBox(color: _color);
+        return Stack(
+          children: [
+            if (hole.top > 0)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                height: hole.top,
+                child: const ColoredBox(color: _color),
+              ),
+            if (hole.bottom < size.height)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: hole.bottom,
+                bottom: 0,
+                child: const ColoredBox(color: _color),
+              ),
+            if (hole.left > 0)
+              Positioned(
+                left: 0,
+                top: hole.top,
+                width: hole.left,
+                height: hole.height,
+                child: const ColoredBox(color: _color),
+              ),
+            if (hole.right < size.width)
+              Positioned(
+                left: hole.right,
+                right: 0,
+                top: hole.top,
+                height: hole.height,
+                child: const ColoredBox(color: _color),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Rect? _holeInside(Rect? raw, Size size) {
+    if (raw == null || size.isEmpty) return null;
+    final left = raw.left.clamp(0.0, size.width).toDouble();
+    final top = raw.top.clamp(0.0, size.height).toDouble();
+    final right = raw.right.clamp(0.0, size.width).toDouble();
+    final bottom = raw.bottom.clamp(0.0, size.height).toDouble();
+    if (right - left < 8 || bottom - top < 8) return null;
+    return Rect.fromLTRB(left, top, right, bottom);
   }
 }

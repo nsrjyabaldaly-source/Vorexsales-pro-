@@ -83,6 +83,22 @@ class VxL10n {
   String get hasAccount => _s('auth.hasAccount');
   String get createAccount => _s('auth.create');
   String get login => _s('auth.login');
+  String get logout => _s('auth.logout');
+  String get linkLive =>
+      isAr ? 'متصل بالسيرفر' : 'Connected to server';
+  String get linkOffline =>
+      isAr ? 'أوفلاين — تعرض النسخة المحلية' : 'Offline — showing on-device copy';
+  String get linkSession =>
+      isAr ? 'انتهت الجلسة — ادخل من جديد' : 'Session expired — sign in again';
+  String get suggestReply =>
+      isAr ? 'اقترح رداً' : 'Suggest reply';
+  String get exportData =>
+      isAr ? 'تصدير الكتالوج والعملاء' : 'Export catalog & leads';
+  String get openWhatsapp =>
+      isAr ? 'افتح واتساب' : 'Open WhatsApp';
+  String get demoBadge => isAr ? 'عرض تجريبي' : 'Demo';
+  String get previewLocale =>
+      isAr ? 'معاينة إنجليزي' : 'Preview Arabic';
 
   String get onboardTitle => _s('onboarding.title');
   String stepOf(int n) => _s('onboarding.step', {'n': '$n'});
@@ -136,6 +152,12 @@ class VxL10n {
   String get needsYou => _s('inbox.needsYou');
   String get intent => _s('inbox.intent');
   String get replyLocked => _s('inbox.replyLocked');
+  String get inboxReply => _s('inbox.replyPlaceholder');
+  String get inboxTeam => _s('inbox.team');
+  String get inboxResume => _s('inbox.resume');
+  String get inboxConfirm => _s('inbox.confirmSlot');
+  String get inboxCancel => _s('inbox.cancelSlot');
+  String get inboxHandedOff => _s('inbox.handedOff');
 
   String get playgroundTitle => _s('playground.title');
   String get playgroundSub => _s('playground.subtitle');
@@ -149,11 +171,11 @@ class VxL10n {
   String get boldCloser => _s('playground.bold');
   String get localeChip => '${info.native} · ${info.dir.toUpperCase()}';
   String get mockHello => isAr
-      ? 'أهلاً — أنا مُغلق Luna Dental التجريبي. اسأل عن سعر أو موعد.'
-      : 'Hi — I’m Luna Dental’s mock closer. Ask for a price or a slot.';
+      ? 'أهلاً، معك مساعد Luna. تبي تنظيف، تبييض، ولا استشارة؟'
+      : 'Hi — I’m Luna’s assistant. Cleaning, whitening, or a consult?';
   String get mockInstructions => isAr
-      ? 'بع فقط من الكتالوج. لا تخترع أسعاراً. إن جهلت، اجمع العميل.'
-      : 'Sell only from the catalog. Never invent prices. If unsure, capture the lead.';
+      ? 'صوت المتجر: دافئ ومقنع. بع من قائمتنا فقط. إذا وافق الزبون، اطلب الاسم والرقم.'
+      : 'Shop voice: warm and persuasive. Sell from our list only. If they agree, ask for name and phone.';
 
   String get knowledgeTitle => _s('knowledge.title');
   String get knowledgeSub => _s('knowledge.subtitle');
@@ -191,6 +213,8 @@ class VxL10n {
   String get remove => _s('store.remove');
   String get empty => _s('store.empty');
   String get storeNote => _s('store.note');
+  String get storeOffline => _s('store.offline');
+  String storeStatus(bool live) => live ? storeNote : storeOffline;
   String get edit => _s('store.edit');
   String get who => _s('store.who');
   String get service => _s('store.service');
@@ -227,6 +251,12 @@ class VxL10n {
   String get aiKey => _s('settings.aiKey');
   String get filled => _s('settings.filled');
   String get emptyPlaceholder => _s('settings.empty');
+  String get provider => _s('settings.provider');
+  String get mode => _s('settings.mode');
+  String get checkConnection => isAr ? 'تحقق من الاتصال' : 'Check connection';
+  String get keyStaysOnServer => isAr
+      ? 'مفتاح الذكاء الاصطناعي يبقى على سيرفر الويب. التطبيق يقرأ الجاهزية من /api/health فقط.'
+      : 'The AI key stays on the web server. This app only reads readiness from /api/health.';
   String get howtoSkip => _s('howto.skip');
   String get howtoNext => _s('howto.next');
   String get howtoBack => _s('howto.back');
@@ -263,6 +293,21 @@ class VxL10n {
   String get brain => _s('channels.brain');
   String get openWidget => _s('channels.openWidget');
   String get connect => _s('channels.connect');
+  String get whatsappBody =>
+      _lookup(_msg, 'channels.whatsappBody') ??
+      _lookup(_en, 'channels.whatsappBody') ??
+      (isAr
+          ? 'مفاتيح واتساب تبقى على السيرفر. الرسائل تدخل نفس صندوق الويدجت.'
+          : 'WhatsApp tokens stay on the server. Threads join the same inbox.');
+  String get phoneId => isAr ? 'معرّف رقم واتساب' : 'WhatsApp phone number ID';
+  String get accessToken => isAr ? 'رمز Cloud API' : 'Cloud API access token';
+  String get verifyToken => isAr ? 'رمز التحقق' : 'Webhook verify token';
+  String get webhookHint => isAr
+      ? 'الويب هوك: /api/channels/whatsapp'
+      : 'Webhook: /api/channels/whatsapp';
+  String get saveWhatsapp => isAr ? 'احفظ واتساب' : 'Save WhatsApp';
+  String get copySnippet => isAr ? 'انسخ المقطع' : 'Copy snippet';
+  String get snippetCopied => isAr ? 'تم النسخ' : 'Copied';
 
   String get widgetHello => _s('widget.hello');
   String get widgetPlaceholder => _s('widget.placeholder');

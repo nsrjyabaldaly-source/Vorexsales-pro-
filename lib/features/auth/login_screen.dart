@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vortexsales/core/brand/vortex_wordmark.dart';
 import 'package:vortexsales/core/state/app_controller.dart';
+import 'package:vortexsales/core/state/store_controller.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/theme/vx_radii.dart';
 import 'package:vortexsales/core/widgets/vx_button.dart';
@@ -18,13 +19,24 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController(text: 'muhanad@vortex.llc');
-  final _password = TextEditingController(text: '••••••••');
+  final _password = TextEditingController();
 
   @override
   void dispose() {
     _email.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  Future<void> _enter({bool demo = false}) async {
+    final app = VxScope.of(context);
+    final err = await app.login(
+      demo: demo,
+      email: _email.text,
+      password: _password.text,
+    );
+    if (!mounted || err != null) return;
+    await StoreScope.of(context).load(demo: app.demoWorkspace);
   }
 
   @override
@@ -66,11 +78,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: VxTextField(controller: _password, obscure: true),
                 ),
                 const SizedBox(height: 20),
+                if (app.authError != null) ...[
+                  Text(
+                    t.signInBody,
+                    style: const TextStyle(fontSize: 13, color: VxColors.violet),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 VxButton(
                   label: t.continueLabel,
                   expanded: true,
                   size: VxButtonSize.lg,
-                  onPressed: () => app.login(),
+                  onPressed: app.authBusy ? null : () => _enter(),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -88,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   variant: VxButtonVariant.secondary,
                   expanded: true,
                   size: VxButtonSize.lg,
-                  onPressed: () => app.login(demo: true),
+                  onPressed: app.authBusy ? null : () => _enter(demo: true),
                 ),
                 const SizedBox(height: 20),
                 Wrap(

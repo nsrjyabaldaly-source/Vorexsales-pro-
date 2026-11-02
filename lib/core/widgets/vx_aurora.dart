@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 
+/// Same atmosphere as the live website body:
+/// cyan wash at 12%/-10%, violet wash at 92%/0%, faint 56px grid.
 class VxAurora extends StatelessWidget {
   const VxAurora({super.key, required this.child});
 
@@ -11,18 +13,32 @@ class VxAurora extends StatelessWidget {
     return Stack(
       children: [
         const Positioned.fill(child: ColoredBox(color: VxColors.ink900)),
-        const Positioned(
-          left: -80,
-          top: -120,
+        const Positioned.fill(
           child: IgnorePointer(
-            child: _Blob(color: VxColors.auroraCyan, size: 420),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(-0.76, -1.2),
+                  radius: 1.15,
+                  colors: [VxColors.auroraCyan, Color(0x0022E3D2)],
+                  stops: [0, 0.55],
+                ),
+              ),
+            ),
           ),
         ),
-        const Positioned(
-          right: -60,
-          top: -40,
+        const Positioned.fill(
           child: IgnorePointer(
-            child: _Blob(color: VxColors.auroraViolet, size: 340),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0.84, -1.0),
+                  radius: 0.95,
+                  colors: [VxColors.auroraViolet, Color(0x008B6CFF)],
+                  stops: [0, 0.50],
+                ),
+              ),
+            ),
           ),
         ),
         const Positioned.fill(child: IgnorePointer(child: _GridFade())),
@@ -32,34 +48,18 @@ class VxAurora extends StatelessWidget {
   }
 }
 
-class _Blob extends StatelessWidget {
-  const _Blob({required this.color, required this.size});
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size * 0.55,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
-      ),
-    );
-  }
-}
-
 class _GridFade extends StatelessWidget {
   const _GridFade();
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(painter: _GridPainter());
+    return const CustomPaint(painter: _GridPainter(), child: SizedBox.expand());
   }
 }
 
 class _GridPainter extends CustomPainter {
+  const _GridPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
     const step = 56.0;

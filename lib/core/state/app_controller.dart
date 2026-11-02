@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vortexsales/core/api/vx_api_client.dart';
+import 'package:vortexsales/core/api/vx_api_config.dart';
+import 'package:vortexsales/core/api/vx_session.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
 import 'package:vortexsales/core/l10n/vx_locales.dart';
 
@@ -13,6 +16,10 @@ class AppController extends ChangeNotifier {
   bool onboarded = false;
   bool tutorialDone = false;
   bool coachDone = false;
+  bool authBusy = false;
+  String? authError;
+  bool sessionExpired = false;
+  bool demoWorkspace = false;
 
   Map<String, dynamic> _en = {};
   Map<String, dynamic> _msg = {};
@@ -46,9 +53,13 @@ class AppController extends ChangeNotifier {
     _msg = localeCode == 'en' ? _en : await VxL10n.loadMessages(localeCode);
     languageChosen = p.getBool('vx.language') ?? false;
     loggedIn = p.getBool('vx.loggedIn') ?? false;
+    demoWorkspace = p.getBool('vx.demo') ?? false;
     onboarded = p.getBool('vx.onboarded') ?? false;
     tutorialDone = p.getBool('vx.tutorial') ?? false;
     coachDone = p.getBool('vx.coach') ?? false;
+    if (loggedIn) {
+      await _validateSession();
+    }
     gate = !languageChosen
         ? VxGate.language
         : !tutorialDone
@@ -59,6 +70,65 @@ class AppController extends ChangeNotifier {
                     ? VxGate.onboarding
                     : VxGate.app;
     notifyListeners();
+  }
+
+  /// Confirms the bearer token with GET /api/auth. Soft-fails offline.
+  Future<void> _validateSession() async {
+    if (!VxApiConfig.configured || !VxSession.signedIn) {
+      if (loggedIn && !VxSession.signedIn) {
+        loggedIn = false;
+        final p = await SharedPreferences.getInstance();
+        await p.setBool('vx.loggedIn', false);
+      }
+      return;
+    }
+    try {
+      await VxApiClient().getJson(VxApiPaths.auth);
+    } on VxApiException catch (e) {
+      if (e.status == 401) {
+        await markSessionExpired();
+      }
+    } catch (_) {
+      // Keep local session when the server is unreachable.
+    }
+  }
+
+  Future<void> markSessionExpired() async {
+    await VxSession.clear();
+    loggedIn = false;
+    sessionExpired = true;
+    demoWorkspace = false;
+    gate = VxGate.login;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('vx.loggedIn', false);
+    await p.setBool('vx.demo', false);
+  }
+
+  Future<void> logout() async {
+    authBusy = true;
+    notifyListeners();
+    if (VxApiConfig.configured && VxSession.signedIn) {
+      try {
+        await VxApiClient().sendJson(
+          VxApiPaths.auth,
+          method: 'POST',
+          body: {'action': 'logout'},
+        );
+      } catch (_) {
+        // Clear local state even if the server call fails.
+      }
+    }
+    await VxSession.clear();
+    loggedIn = false;
+    sessionExpired = false;
+    demoWorkspace = false;
+    gate = VxGate.login;
+    authBusy = false;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('vx.loggedIn', false);
+    await p.setBool('vx.demo', false);
   }
 
   Future<void> setLocale(String code) async {
@@ -114,22 +184,87 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> login({bool demo = false}) async {
+  Future<String?> login({
+    bool demo = false,
+    String email = '',
+    String password = '',
+  }) async {
+    authBusy = true;
+    authError = null;
+    notifyListeners();
+    if (VxApiConfig.configured) {
+      try {
+        final json = await VxApiClient().sendJson(
+          VxApiPaths.auth,
+          method: 'POST',
+          body: demo
+              ? {'demo': true}
+              : {'email': email.trim(), 'password': password},
+        );
+        final token = json['token'] as String? ?? '';
+        if (token.isEmpty) throw VxApiException('no session');
+        await VxSession.set(token);
+      } catch (e) {
+        authBusy = false;
+        authError = e.toString();
+        notifyListeners();
+        return authError;
+      }
+    }
     loggedIn = true;
+    sessionExpired = false;
+    demoWorkspace = demo;
     if (demo) onboarded = true;
     gate = demo || onboarded ? VxGate.app : VxGate.onboarding;
+    authBusy = false;
     notifyListeners();
     final p = await SharedPreferences.getInstance();
     await p.setBool('vx.loggedIn', true);
+    await p.setBool('vx.demo', demo);
     if (demo) await p.setBool('vx.onboarded', true);
+    return null;
   }
 
-  Future<void> register() async {
+  Future<String?> register({
+    String name = '',
+    String email = '',
+    String password = '',
+  }) async {
+    authBusy = true;
+    authError = null;
+    notifyListeners();
+    if (VxApiConfig.configured) {
+      try {
+        final json = await VxApiClient().sendJson(
+          VxApiPaths.auth,
+          method: 'POST',
+          body: {
+            'action': 'register',
+            'name': name.trim(),
+            'email': email.trim(),
+            'password': password,
+          },
+        );
+        final token = json['token'] as String? ?? '';
+        if (token.isEmpty) throw VxApiException('no session');
+        await VxSession.set(token);
+      } catch (e) {
+        authBusy = false;
+        authError = e.toString();
+        notifyListeners();
+        return authError;
+      }
+    }
     loggedIn = true;
+    sessionExpired = false;
+    demoWorkspace = false;
     gate = VxGate.onboarding;
+    authBusy = false;
     notifyListeners();
     final p = await SharedPreferences.getInstance();
     await p.setBool('vx.loggedIn', true);
+    await p.setBool('vx.demo', false);
+    return null;
   }
 
   Future<void> completeOnboarding() async {

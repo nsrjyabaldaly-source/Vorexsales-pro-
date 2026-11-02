@@ -1,0 +1,28 @@
+---
+description: VortexSales mobile is Flutter-only; match AMREKA2 identity; call web APIs with no secrets
+alwaysApply: true
+---
+
+# VortexSales mobile (`vorex mibile`)
+
+This repo is **Flutter + Dart only**. Never add Next.js, Node.js, React, or web-app code here. AMREKA2 is the web server; this app is the phone client.
+
+## Scope
+
+- Work only in Flutter widgets and app structure: models, screens, services.
+- Visual identity must match AMREKA2 1:1: ink/mist/cyan `#22E3D2` / violet `#8B6CFF`, glass, aurora, Outfit / Plus Jakarta / IBM Plex Sans Arabic.
+
+## Services and AI
+
+- Call the web server over HTTP using `VxApiConfig.baseUrl` + AMREKA2 paths (`/api/health`, `/api/chat`, `/api/catalog`, …).
+- Pass the base URL at build time: `--dart-define=VX_API_BASE=https://…`
+- **Never** put API keys, AI secrets, or `.env` credentials in this project. Keys stay on the web server.
+
+```dart
+// BAD — secrets in the app
+const key = 'sk-...';
+
+// GOOD — public base URL only
+const base = String.fromEnvironment('VX_API_BASE');
+final res = await http.get(Uri.parse('$base/api/health'));
+```

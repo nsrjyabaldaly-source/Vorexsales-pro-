@@ -19,7 +19,7 @@ class SplashScreen extends StatelessWidget {
             children: [
               VortexMark(size: 96, glow: true),
               SizedBox(height: 20),
-              VortexWordmark(markSize: 32),
+              VortexWordmark(showMark: false),
               SizedBox(height: 10),
               Text(
                 Brand.company,

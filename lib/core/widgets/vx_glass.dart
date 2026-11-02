@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/theme/vx_radii.dart';
 
+/// Frosted panel — mirrors web `.glass` (blur + ink wash + hairline).
 class VxGlass extends StatelessWidget {
   const VxGlass({
     super.key,

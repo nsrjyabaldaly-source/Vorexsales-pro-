@@ -4,6 +4,31 @@ import 'package:vortexsales/core/theme/vx_colors.dart';
 import 'package:vortexsales/core/widgets/vx_button.dart';
 import 'package:vortexsales/core/widgets/vx_glass.dart';
 
+class VxStoreScroll extends StatelessWidget {
+  const VxStoreScroll({
+    super.key,
+    required this.onRefresh,
+    required this.children,
+  });
+
+  final Future<void> Function() onRefresh;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      color: VxColors.cyan,
+      backgroundColor: VxColors.ink800,
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        children: children,
+      ),
+    );
+  }
+}
+
 class VxStoreForm extends StatelessWidget {
   const VxStoreForm({
     super.key,
