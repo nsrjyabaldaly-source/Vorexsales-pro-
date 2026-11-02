@@ -5,6 +5,7 @@ import 'package:vortexsales/core/api/vx_api_config.dart';
 import 'package:vortexsales/core/api/vx_session.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
 import 'package:vortexsales/core/l10n/vx_locales.dart';
+import 'package:vortexsales/core/notify/vx_push.dart';
 
 enum VxGate { splash, language, howto, login, register, onboarding, app }
 
@@ -222,6 +223,9 @@ class AppController extends ChangeNotifier {
     await p.setBool('vx.loggedIn', true);
     await p.setBool('vx.demo', demo);
     if (demo) await p.setBool('vx.onboarded', true);
+    // Ignore push register failures — local notify still works.
+    // ignore: unawaited_futures
+    VxPush.syncTokenToServer();
     return null;
   }
 

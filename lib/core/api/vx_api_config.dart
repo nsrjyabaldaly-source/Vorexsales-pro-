@@ -53,4 +53,6 @@ abstract final class VxApiPaths {
   static const ragQuery = '/api/rag/query';
   static const ragIngest = '/api/rag/ingest';
   static const upload = '/api/upload';
+  static const devices = '/api/devices';
+  static const whatsappTest = '/api/channels/whatsapp/test';
 }

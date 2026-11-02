@@ -23,7 +23,9 @@
 ## Firebase (optional remote push)
 
 1. `flutterfire configure`
-2. Add `firebase_core` + `firebase_messaging`
-3. Implement `VxPush.initIfAvailable()` body to request permission and `saveToken`
+2. Add `firebase_core` + `firebase_messaging` to `pubspec.yaml`
+3. In `VxPush.initIfAvailable()`, request permission + `saveToken` + `syncTokenToServer()`
+4. Device tokens register at `POST /api/devices` (auth required)
 
-Until Firebase is wired, local notifications + 15s poll remain active.
+Until Firebase config files exist, local notifications + 15s poll remain active.
+Upload keystore password (local only): `android/keystore/UPLOAD_PASSWORD.txt`

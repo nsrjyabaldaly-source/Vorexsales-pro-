@@ -106,4 +106,27 @@ class VxStoreApi {
           'verify': verify,
         },
       );
+
+  Future<Map<String, dynamic>> testWhatsapp({
+    required String to,
+    String? text,
+  }) =>
+      _client.sendJson(
+        VxApiPaths.whatsappTest,
+        method: 'POST',
+        body: {
+          'to': to,
+          if (text != null && text.trim().isNotEmpty) 'text': text.trim(),
+        },
+      );
+
+  Future<void> registerDevice({required String token, String? platform}) =>
+      _client.sendJson(
+        VxApiPaths.devices,
+        method: 'POST',
+        body: {
+          'token': token,
+          if (platform != null) 'platform': platform,
+        },
+      );
 }

@@ -47,3 +47,5 @@ app.*.map.json
 # Release signing (never commit real keystores/passwords)
 /android/key.properties
 /android/keystore/
+
+android/keystore/UPLOAD_PASSWORD.txt

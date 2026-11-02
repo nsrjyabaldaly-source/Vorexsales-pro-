@@ -60,9 +60,11 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   final _phoneId = TextEditingController();
   final _token = TextEditingController();
   final _verify = TextEditingController();
+  final _testTo = TextEditingController();
   bool _waLive = false;
   String _snippet = '';
   String _status = '';
+  String _webhook = '';
 
   @override
   void initState() {
@@ -75,6 +77,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     _phoneId.dispose();
     _token.dispose();
     _verify.dispose();
+    _testTo.dispose();
     super.dispose();
   }
 
@@ -88,9 +91,14 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     try {
       final json = await VxStoreApi().channels();
       if (!mounted) return;
+      final origin = VxApiConfig.baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
       setState(() {
         _waLive = json['whatsapp'] is Map && json['whatsapp']['live'] == true;
         _snippet = json['snippet'] as String? ?? '';
+        final hook = json['whatsapp'] is Map
+            ? (json['whatsapp']['webhook'] as String? ?? '/api/channels/whatsapp')
+            : '/api/channels/whatsapp';
+        _webhook = hook.startsWith('http') ? hook : '$origin$hook';
       });
     } catch (_) {
       /* keep local snippet */
@@ -106,10 +114,24 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         verify: _verify.text,
       );
       if (!mounted) return;
+      final origin = VxApiConfig.baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
       setState(() {
         _waLive = json['live'] == true;
-        _status = _waLive ? t.connected : t.later;
+        _status = (json['note'] as String?) ?? (_waLive ? t.connected : t.later);
+        final hook = json['webhook'] as String? ?? '/api/channels/whatsapp';
+        _webhook = hook.startsWith('http') ? hook : '$origin$hook';
       });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _status = e.toString());
+    }
+  }
+
+  Future<void> _testWhatsapp() async {
+    try {
+      await VxStoreApi().testWhatsapp(to: _testTo.text.trim());
+      if (!mounted) return;
+      setState(() => _status = 'Test message sent');
     } catch (e) {
       if (!mounted) return;
       setState(() => _status = e.toString());
@@ -216,8 +238,25 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                   VxField(label: t.verifyToken, child: VxTextField(controller: _verify)),
                   const SizedBox(height: 8),
                   Text(t.webhookHint, style: const TextStyle(fontSize: 12, color: VxColors.mist500)),
+                  if (_webhook.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    SelectableText(_webhook, style: const TextStyle(fontSize: 12, color: VxColors.cyan)),
+                  ],
                   const SizedBox(height: 16),
                   VxButton(label: t.saveWhatsapp, onPressed: _saveWhatsapp),
+                  if (_waLive) ...[
+                    const SizedBox(height: 12),
+                    VxField(
+                      label: 'Test to (E.164)',
+                      child: VxTextField(controller: _testTo),
+                    ),
+                    const SizedBox(height: 12),
+                    VxButton(
+                      label: 'Send test',
+                      variant: VxButtonVariant.secondary,
+                      onPressed: _testWhatsapp,
+                    ),
+                  ],
                   if (_status.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(_status, style: const TextStyle(fontSize: 12, color: VxColors.cyan)),
