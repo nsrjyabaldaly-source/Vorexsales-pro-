@@ -8,16 +8,31 @@ import 'package:vortexsales/core/widgets/vx_field.dart';
 import 'package:vortexsales/core/widgets/vx_glass.dart';
 import 'package:vortexsales/core/widgets/vx_pills.dart';
 import 'package:vortexsales/data/mock/mock_data.dart';
+import 'package:vortexsales/features/channels/channels_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({
+    super.key,
+    this.onOpenChannels,
+    this.initialTab = 'agent',
+  });
+
+  /// Opens the Channels tab in the shell. Falls back to a pushed page.
+  final VoidCallback? onOpenChannels;
+  final String initialTab;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String _tab = 'agent';
+  late String _tab;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = widget.initialTab;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +72,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _openChannels(BuildContext context) {
+    final open = widget.onOpenChannels;
+    if (open != null) {
+      open();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const _ChannelsPage()),
+    );
+  }
+
   Widget _body(BuildContext context, VxL10n t) {
     switch (_tab) {
       case 'widget':
@@ -85,7 +111,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Text(t.channelsSub, style: const TextStyle(color: VxColors.mist300)),
             const SizedBox(height: 16),
-            VxButton(label: t.channelsTitle, onPressed: () {}),
+            VxButton(
+              label: t.channelsTitle,
+              onPressed: () => _openChannels(context),
+            ),
           ],
         );
       case 'server':
@@ -158,5 +187,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
     }
   }
+}
 
+class _ChannelsPage extends StatelessWidget {
+  const _ChannelsPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: VxColors.ink900,
+      body: Column(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, color: VxColors.mist200),
+              ),
+            ),
+          ),
+          const Expanded(child: ChannelsScreen()),
+        ],
+      ),
+    );
+  }
 }

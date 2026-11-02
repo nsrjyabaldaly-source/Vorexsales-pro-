@@ -100,7 +100,12 @@ class _AppShellState extends State<AppShell> {
                             coachKey: _catalogKey,
                           ),
                           LeadsScreen(query: _query),
-                          const SettingsScreen(),
+                          SettingsScreen(
+                            onOpenChannels: () => setState(() {
+                              _index = 2;
+                              _browsing = false;
+                            }),
+                          ),
                         ],
                       ),
                       if (_browsing)

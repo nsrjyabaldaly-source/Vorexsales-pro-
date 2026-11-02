@@ -8,6 +8,42 @@ import 'package:vortexsales/core/widgets/vx_glass.dart';
 import 'package:vortexsales/core/widgets/vx_page_header.dart';
 import 'package:vortexsales/features/channels/widget_preview_screen.dart';
 
+/// The label promises to show where a channel will connect.
+/// Nothing is sent — the card copy already says the live link comes later.
+void showChannelConnectLater(BuildContext context, String channel) {
+  final t = VxL10n.of(context);
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: VxColors.ink900,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(VxRadii.card),
+        side: const BorderSide(color: VxColors.hairline),
+      ),
+      title: Text(channel, style: const TextStyle(color: Colors.white)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t.later, style: const TextStyle(fontSize: 12, color: VxColors.cyan)),
+          const SizedBox(height: 8),
+          Text(
+            t.laterBody,
+            style: const TextStyle(fontSize: 14, height: 1.5, color: VxColors.mist300),
+          ),
+        ],
+      ),
+      actions: [
+        VxButton(
+          label: t.coachDone,
+          size: VxButtonSize.sm,
+          onPressed: () => Navigator.pop(ctx),
+        ),
+      ],
+    ),
+  );
+}
+
 class ChannelsScreen extends StatelessWidget {
   const ChannelsScreen({super.key, this.query = ''});
 
@@ -59,18 +95,27 @@ class ChannelsScreen extends StatelessWidget {
                         child: Icon(ch.$1, color: VxColors.cyan, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(ch.$2, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
-                          Text(
-                            ch.$3 ? t.connected : t.later,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: ch.$3 ? VxColors.cyan : VxColors.mist500,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              ch.$2,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
                             ),
-                          ),
-                        ],
+                            Text(
+                              ch.$3 ? t.connected : t.later,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: ch.$3 ? VxColors.cyan : VxColors.mist500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -93,7 +138,7 @@ class ChannelsScreen extends StatelessWidget {
                     VxButton(
                       label: t.connect,
                       variant: VxButtonVariant.secondary,
-                      onPressed: null,
+                      onPressed: () => showChannelConnectLater(context, ch.$2),
                     ),
                 ],
               ),
