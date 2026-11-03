@@ -49,3 +49,5 @@ app.*.map.json
 /android/keystore/
 
 android/keystore/UPLOAD_PASSWORD.txt
+
+/releases/
