@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vortexsales/core/api/vx_api_client.dart';
 import 'package:vortexsales/core/api/vx_api_config.dart';
 import 'package:vortexsales/core/api/vx_session.dart';
-import 'package:vortexsales/core/auth/vx_google.dart';
+import 'package:vortexsales/core/auth/vx_social.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
 import 'package:vortexsales/core/l10n/vx_locales.dart';
 import 'package:vortexsales/core/notify/vx_push.dart';
@@ -186,6 +186,37 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  String _friendlyAuthError(Object e) {
+    final raw = e.toString().toLowerCase();
+    final ar = localeCode == 'ar';
+    if (raw.contains('cancelled') || raw.contains('canceled')) {
+      return ar ? 'تم إلغاء الدخول.' : 'Sign-in was cancelled.';
+    }
+    if (raw.contains('password short')) {
+      return ar ? 'كلمة المرور قصيرة (٦ أحرف على الأقل).' : 'Password too short (min 6 characters).';
+    }
+    if (raw.contains('invalid email')) {
+      return ar ? 'تحقق من البريد الإلكتروني.' : 'Check your email address.';
+    }
+    if (raw.contains('invalid credentials') || raw.contains('401')) {
+      return ar
+          ? 'البريد أو كلمة المرور غير صحيحة.'
+          : 'Email or password is incorrect.';
+    }
+    if (raw.contains('email taken')) {
+      return ar ? 'هذا البريد مستخدم مسبقاً — جرّب الدخول.' : 'Email already used — try signing in.';
+    }
+    if (raw.contains('google') || raw.contains('facebook') || raw.contains('503') || raw.contains('configured')) {
+      return ar
+          ? 'الدخول الاجتماعي غير جاهز الآن. استخدم البريد أو التجربة السريعة.'
+          : 'Social sign-in isn’t ready yet. Use email or the quick demo.';
+    }
+    if (raw.contains('socket') || raw.contains('failed host') || raw.contains('timeout')) {
+      return ar ? 'تحقق من الإنترنت وحاول مرة ثانية.' : 'Check your connection and try again.';
+    }
+    return ar ? 'ما قدرنا نكمّل الدخول. جرّب طريقة ثانية.' : 'Couldn’t finish sign-in. Try another method.';
+  }
+
   Future<String?> login({
     bool demo = false,
     String email = '',
@@ -208,7 +239,7 @@ class AppController extends ChangeNotifier {
         await VxSession.set(token);
       } catch (e) {
         authBusy = false;
-        authError = e.toString();
+        authError = _friendlyAuthError(e);
         notifyListeners();
         return authError;
       }
@@ -216,14 +247,48 @@ class AppController extends ChangeNotifier {
     return _finishLogin(demo: demo);
   }
 
-  Future<String?> loginWithGoogle() async {
+  Future<String?> continueWithEmail({
+    required String email,
+    required String password,
+    String name = '',
+  }) async {
+    authBusy = true;
+    authError = null;
+    notifyListeners();
+    if (!VxApiConfig.configured) {
+      return _finishLogin(demo: false);
+    }
+    try {
+      final json = await VxApiClient().sendJson(
+        VxApiPaths.auth,
+        method: 'POST',
+        body: {
+          'action': 'continue',
+          'email': email.trim(),
+          'password': password,
+          'name': name.trim(),
+        },
+      );
+      final token = json['token'] as String? ?? '';
+      if (token.isEmpty) throw VxApiException('no session');
+      await VxSession.set(token);
+    } catch (e) {
+      authBusy = false;
+      authError = _friendlyAuthError(e);
+      notifyListeners();
+      return authError;
+    }
+    return _finishLogin(demo: false);
+  }
+
+  Future<String?> _socialLogin(Future<VxSocialResult?> Function() obtain) async {
     authBusy = true;
     authError = null;
     notifyListeners();
     try {
-      final creds = await VxGoogleAuth.signIn();
-      if (creds == null || !creds.hasCredential) {
-        throw VxApiException('Google sign-in cancelled');
+      final creds = await obtain();
+      if (creds == null || !creds.ok) {
+        throw VxApiException('cancelled');
       }
       if (creds.sessionToken != null && creds.sessionToken!.isNotEmpty) {
         await VxSession.set(creds.sessionToken!);
@@ -232,9 +297,8 @@ class AppController extends ChangeNotifier {
           VxApiPaths.auth,
           method: 'POST',
           body: {
-            'action': 'google',
-            if (creds.idToken != null && creds.idToken!.isNotEmpty)
-              'idToken': creds.idToken,
+            'action': creds.provider,
+            if (creds.idToken != null && creds.idToken!.isNotEmpty) 'idToken': creds.idToken,
             if (creds.accessToken != null && creds.accessToken!.isNotEmpty)
               'accessToken': creds.accessToken,
           },
@@ -245,12 +309,16 @@ class AppController extends ChangeNotifier {
       }
     } catch (e) {
       authBusy = false;
-      authError = e.toString();
+      authError = _friendlyAuthError(e);
       notifyListeners();
       return authError;
     }
     return _finishLogin(demo: false);
   }
+
+  Future<String?> loginWithGoogle() => _socialLogin(VxSocialAuth.google);
+
+  Future<String?> loginWithFacebook() => _socialLogin(VxSocialAuth.facebook);
 
   Future<String?> _finishLogin({required bool demo}) async {
     loggedIn = true;
@@ -294,7 +362,7 @@ class AppController extends ChangeNotifier {
         await VxSession.set(token);
       } catch (e) {
         authBusy = false;
-        authError = e.toString();
+        authError = _friendlyAuthError(e);
         notifyListeners();
         return authError;
       }
