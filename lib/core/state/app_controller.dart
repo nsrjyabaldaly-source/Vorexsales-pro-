@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vortexsales/core/api/vx_api_client.dart';
 import 'package:vortexsales/core/api/vx_api_config.dart';
 import 'package:vortexsales/core/api/vx_session.dart';
+import 'package:vortexsales/core/auth/vx_google.dart';
 import 'package:vortexsales/core/l10n/vx_l10n.dart';
 import 'package:vortexsales/core/l10n/vx_locales.dart';
 import 'package:vortexsales/core/notify/vx_push.dart';
@@ -212,6 +213,46 @@ class AppController extends ChangeNotifier {
         return authError;
       }
     }
+    return _finishLogin(demo: demo);
+  }
+
+  Future<String?> loginWithGoogle() async {
+    authBusy = true;
+    authError = null;
+    notifyListeners();
+    try {
+      final creds = await VxGoogleAuth.signIn();
+      if (creds == null || !creds.hasCredential) {
+        throw VxApiException('Google sign-in cancelled');
+      }
+      if (creds.sessionToken != null && creds.sessionToken!.isNotEmpty) {
+        await VxSession.set(creds.sessionToken!);
+      } else {
+        final json = await VxApiClient().sendJson(
+          VxApiPaths.auth,
+          method: 'POST',
+          body: {
+            'action': 'google',
+            if (creds.idToken != null && creds.idToken!.isNotEmpty)
+              'idToken': creds.idToken,
+            if (creds.accessToken != null && creds.accessToken!.isNotEmpty)
+              'accessToken': creds.accessToken,
+          },
+        );
+        final token = json['token'] as String? ?? '';
+        if (token.isEmpty) throw VxApiException('no session');
+        await VxSession.set(token);
+      }
+    } catch (e) {
+      authBusy = false;
+      authError = e.toString();
+      notifyListeners();
+      return authError;
+    }
+    return _finishLogin(demo: false);
+  }
+
+  Future<String?> _finishLogin({required bool demo}) async {
     loggedIn = true;
     sessionExpired = false;
     demoWorkspace = demo;
@@ -223,7 +264,6 @@ class AppController extends ChangeNotifier {
     await p.setBool('vx.loggedIn', true);
     await p.setBool('vx.demo', demo);
     if (demo) await p.setBool('vx.onboarded', true);
-    // Ignore push register failures — local notify still works.
     // ignore: unawaited_futures
     VxPush.syncTokenToServer();
     return null;

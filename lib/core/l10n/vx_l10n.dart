@@ -78,6 +78,13 @@ class VxL10n {
   String get fullName => _s('auth.name');
   String get continueLabel => _s('auth.continue');
   String get demo => _s('auth.demo');
+  String get googleContinue {
+    final v = _s('auth.google');
+    if (v == 'auth.google') {
+      return isAr ? 'المتابعة مع Google' : 'Continue with Google';
+    }
+    return v;
+  }
   String get or => _s('auth.or');
   String get noAccount => _s('auth.noAccount');
   String get hasAccount => _s('auth.hasAccount');

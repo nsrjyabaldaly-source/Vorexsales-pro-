@@ -91,6 +91,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   size: VxButtonSize.lg,
                   onPressed: app.authBusy ? null : () => _enter(),
                 ),
+                const SizedBox(height: 12),
+                VxButton(
+                  label: t.googleContinue,
+                  variant: VxButtonVariant.secondary,
+                  expanded: true,
+                  size: VxButtonSize.lg,
+                  onPressed: app.authBusy
+                      ? null
+                      : () async {
+                          final err = await app.loginWithGoogle();
+                          if (!context.mounted || err != null) return;
+                          await StoreScope.of(context).load(demo: app.demoWorkspace);
+                        },
+                ),
                 const SizedBox(height: 20),
                 Text(
                   t.or.toUpperCase(),
